@@ -282,9 +282,168 @@ if ($action === 'check_auth' || $action === 'check') {
     exit;
 }
 
+// 4A. AGENT SIGN-IN (Direct API / Mobile App)
+if ($action === 'login' || $action === 'agent_login') {
+    $identifier = trim($_POST['identifier'] ?? $_GET['identifier'] ?? '');
+    $password = trim($_POST['password'] ?? $_GET['password'] ?? '');
+
+    if (empty($identifier) || empty($password)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Please provide your email/Agent ID and password.']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT * FROM agents 
+        WHERE LOWER(email) = LOWER(?) OR UPPER(agent_code) = UPPER(?) 
+        LIMIT 1
+    ");
+    $stmt->execute([$identifier, $identifier]);
+    $agent = $stmt->fetch();
+
+    if (!$agent || !password_verify($password, $agent['password_hash'])) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Invalid credentials. Please verify your email / Agent ID and password.']);
+        exit;
+    }
+
+    if (($agent['status'] ?? '') === 'suspended') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Your agent accreditation has been suspended. Please contact your coordinator.']);
+        exit;
+    }
+
+    unset($agent['password_hash']);
+    start_secure_session();
+    $_SESSION['agent'] = $agent;
+
+    $token = hash_hmac('sha256', $agent['id'] . '|' . $agent['agent_code'] . '|' . $agent['email'], 'SIA_2027_SECRET_KEY');
+    $_SESSION['csrf_token'] = $token;
+
+    try {
+        $upd = $pdo->prepare("UPDATE agents SET last_seen_at = datetime('now') WHERE id = ?");
+        $upd->execute([$agent['id']]);
+    } catch (Throwable) {}
+
+    audit_log($pdo, 'agent', (int)$agent['id'], 'mobile_agent_login_success', 'agents', (int)$agent['id'], [
+        'ip' => $ip,
+        'agent_code' => $agent['agent_code']
+    ]);
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Signed in successfully',
+        'auth_token' => $token,
+        'csrf_token' => $token,
+        'agent' => $agent
+    ]);
+    exit;
+}
+
+// 4B. AGENT REGISTRATION (Direct API / Mobile App)
+if ($action === 'register' || $action === 'agent_signup') {
+    $name = sanitize($_POST['name'] ?? '');
+    $email = strtolower(trim($_POST['email'] ?? ''));
+    $phone = sanitize($_POST['phone'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+    $lga = sanitize($_POST['lga'] ?? '');
+    $ward = sanitize($_POST['ward'] ?? '');
+    $polling_unit = sanitize($_POST['polling_unit'] ?? '');
+
+    if (empty($name) || empty($email) || empty($phone) || empty($password) || empty($lga) || empty($ward) || empty($polling_unit)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'All fields including LGA, Ward, and Polling Unit are required.']);
+        exit;
+    }
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid email address provided.']);
+        exit;
+    }
+
+    $check_stmt = $pdo->prepare("SELECT id FROM agents WHERE LOWER(email) = LOWER(?) LIMIT 1");
+    $check_stmt->execute([$email]);
+    if ($check_stmt->fetch()) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'An agent account with this email already exists.']);
+        exit;
+    }
+
+    $photo_path = null;
+    if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = __DIR__ . '/uploads/agents/';
+        if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+        $ext = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION)) ?: 'jpg';
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) $ext = 'jpg';
+        $safe_filename = 'agent_face_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        if (move_uploaded_file($_FILES['photo']['tmp_name'], $upload_dir . $safe_filename)) {
+            $photo_path = 'uploads/agents/' . $safe_filename;
+        }
+    }
+
+    $password_hash = password_hash($password, PASSWORD_BCRYPT);
+    $agent_code = 'SIA-AD-' . strtoupper(bin2hex(random_bytes(3)));
+
+    $ins = $pdo->prepare("
+        INSERT INTO agents (name, email, password_hash, phone, photo, role, state, lga, ward, polling_unit, agent_code, status, created_at)
+        VALUES (?, ?, ?, ?, ?, 'agent', 'Adamawa State', ?, ?, ?, ?, 'accredited', datetime('now'))
+    ");
+    $ins->execute([$name, $email, $password_hash, $phone, $photo_path, $lga, $ward, $polling_unit, $agent_code]);
+    $new_id = (int)$pdo->lastInsertId();
+
+    $stmt_get = $pdo->prepare("SELECT * FROM agents WHERE id = ?");
+    $stmt_get->execute([$new_id]);
+    $agent = $stmt_get->fetch();
+    unset($agent['password_hash']);
+
+    start_secure_session();
+    $_SESSION['agent'] = $agent;
+
+    $token = hash_hmac('sha256', $agent['id'] . '|' . $agent['agent_code'] . '|' . $agent['email'], 'SIA_2027_SECRET_KEY');
+    $_SESSION['csrf_token'] = $token;
+
+    audit_log($pdo, 'agent', $new_id, 'mobile_agent_registered', 'agents', $new_id, [
+        'ip' => $ip,
+        'agent_code' => $agent_code
+    ]);
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Agent accredited successfully!',
+        'auth_token' => $token,
+        'csrf_token' => $token,
+        'agent' => $agent
+    ]);
+    exit;
+}
+
 // =============================================================
-// AUTHENTICATED AGENT ENDPOINTS (Requires Active Session)
+// AUTHENTICATED AGENT ENDPOINTS (Requires Active Session / API Token)
 // =============================================================
+
+// Check API Bearer / Header Token for Mobile App
+if (!is_agent_authenticated()) {
+    $auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['HTTP_X_AGENT_TOKEN'] ?? $_POST['auth_token'] ?? null;
+    $agent_code_hdr = $_SERVER['HTTP_X_AGENT_CODE'] ?? $_POST['agent_code'] ?? null;
+    if ($auth_header && str_starts_with($auth_header, 'Bearer ')) {
+        $auth_header = substr($auth_header, 7);
+    }
+    if ($auth_header && $agent_code_hdr) {
+        $stmt_tok = $pdo->prepare("SELECT * FROM agents WHERE UPPER(agent_code) = UPPER(?) LIMIT 1");
+        $stmt_tok->execute([$agent_code_hdr]);
+        $tok_agent = $stmt_tok->fetch();
+        if ($tok_agent) {
+            $expected = hash_hmac('sha256', $tok_agent['id'] . '|' . $tok_agent['agent_code'] . '|' . $tok_agent['email'], 'SIA_2027_SECRET_KEY');
+            if (hash_equals($expected, $auth_header)) {
+                unset($tok_agent['password_hash']);
+                start_secure_session();
+                $_SESSION['agent'] = $tok_agent;
+                $_SESSION['csrf_token'] = $auth_header;
+            }
+        }
+    }
+}
 
 if (!is_agent_authenticated()) {
     http_response_code(401);

@@ -27,7 +27,7 @@ function verify_csrf_token(?string $token): bool {
 }
 
 function verify_csrf_request(): bool {
-    $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+    $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['auth_token'] ?? $_SERVER['HTTP_X_AGENT_TOKEN'] ?? null;
     return verify_csrf_token($token);
 }
 
