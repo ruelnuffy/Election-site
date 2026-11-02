@@ -1,0 +1,51 @@
+lga_name,lga_code,ward_name,ward_code,pu_name,pu_code,registered_voters
+Demsa,AD-DMA,Bille,AD-DMA-W01,Bamoro I / Central PRI. SCH.,02/01/01/001,532
+Demsa,AD-DMA,Bille,AD-DMA-W01,Bamoro II / Near Bamako Clinic,02/01/01/002,465
+Demsa,AD-DMA,Bille,AD-DMA-W01,Daku Sung / Dakusung PRI. SCH.,02/01/01/003,851
+Demsa,AD-DMA,Bille,AD-DMA-W01,Gadamayo / Ext. PRI. SCH.,02/01/01/004,812
+Demsa,AD-DMA,Bille,AD-DMA-W01,Gah - Fulani / PRI. SCH.,02/01/01/005,497
+Demsa,AD-DMA,Bille,AD-DMA-W01,Gejembo / PRI. SCH.,02/01/01/006,810
+Demsa,AD-DMA,Bille,AD-DMA-W01,Gidan Killu / Playin Ground,02/01/01/007,501
+Demsa,AD-DMA,Bille,AD-DMA-W01,Kwafara I / Tere PRI. SCH.,02/01/01/008,542
+Demsa,AD-DMA,Bille,AD-DMA-W01,Kwafara II / Playin Ground,02/01/01/009,635
+Demsa,AD-DMA,Bille,AD-DMA-W01,Telwe,02/01/01/010,591
+Demsa,AD-DMA,Bille,AD-DMA-W01,Kasuwan Bille,02/01/01/011,621
+Demsa,AD-DMA,Bille,AD-DMA-W01,Babuli,02/01/01/012,808
+Demsa,AD-DMA,Bille,AD-DMA-W01,Goglandge,02/01/01/013,798
+Demsa,AD-DMA,Bille,AD-DMA-W01,GDSS Killu,02/01/01/014,829
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Bange / Bange Primary School,02/01/02/001,787
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Kunteri / Kunteri PRI. SCH.,02/01/02/002,820
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Mbumara / Playin Ground,02/01/02/003,776
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Morro / Morro Primary SCH.,02/01/02/004,469
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Tikka / Tikka PRI. SCH.,02/01/02/005,478
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Ung. Ganji / Near Cottage Hospital,02/01/02/006,540
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Ung. Jenjo / Playin Ground,02/01/02/007,792
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Ung. Mbulawa / Borrong II PRY. SCH.,02/01/02/008,754
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Bange 2,02/01/02/009,427
+Demsa,AD-DMA,Borrong,AD-DMA-W02,GDSS Borrong,02/01/02/010,442
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Central PRY. SCH. Borrong,02/01/02/011,695
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Football Field Borrong,02/01/02/012,657
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Post Office Borrong,02/01/02/013,703
+Demsa,AD-DMA,Borrong,AD-DMA-W02,Ung Bulawa II,02/01/02/014,762
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Gani Gaku / PRI. SCH.,02/01/03/001,813
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Kodomun / PRI. SCH.,02/01/03/002,593
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Kudiri / Kudiri PRI. SCH.,02/01/03/003,460
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Kunliro / Kunliro PRI. SCH.,02/01/03/004,601
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Kwayine / Kwayine PRI. SCH.,02/01/03/005,568
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Murgarang / PRI. SCH.,02/01/03/006,810
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Sabon Demsa I / Viewing Centre,02/01/03/007,429
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Sabon Demsa II / L.G. Pavillion,02/01/03/008,460
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Tsohon Demsa / N.a Office,02/01/03/009,814
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Ung Jatau,02/01/03/010,705
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Paraliyon,02/01/03/011,621
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Kwavoti,02/01/03/012,539
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Vudegbakun,02/01/03/013,852
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Podan,02/01/03/014,703
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Njimyatye,02/01/03/015,493
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Gorogbakai,02/01/03/016,770
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Gawon,02/01/03/017,492
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Murgarang II,02/01/03/018,863
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Murgarang III,02/01/03/019,799
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Bwashi,02/01/03/020,827
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Kwaha Swade,02/01/03/021,590
+Demsa,AD-DMA,Demsa,AD-DMA-W03,Central PRY. SCH. Demsa,02/01/03/022,566

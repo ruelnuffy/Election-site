@@ -1,0 +1,30 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Large Archives & Compressed files
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+
+# Temporary & backup files
+*.bak
+*.tmp
+*~
+_archive/
+
+# User uploaded files (preserve directory structure and security)
+uploads/*
+!uploads/.htaccess
+!uploads/agents/
+!uploads/agents/.gitkeep
+
+# Runtime files
+database/*.lock
+database/.perm_test

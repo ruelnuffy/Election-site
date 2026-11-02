@@ -1,0 +1,11 @@
+# Disable all script execution in uploads directory
+<FilesMatch ".*">
+    SetHandler None
+</FilesMatch>
+
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|phar|inc|cgi|pl)$">
+    Order Allow,Deny
+    Deny from all
+    Require all denied
+</FilesMatch>
+
