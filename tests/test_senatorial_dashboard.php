@@ -156,6 +156,48 @@ $pub_out2 = shell_exec($cmd2);
 $pub_resp2 = json_decode($pub_out2, true);
 assert_test($pub_resp2 && $pub_resp2['success'] === true, "Public api.php senatorial_agents returns success without auth");
 
+// TEST 9: Dedicated Management Portal Gateway (management.php)
+echo "\n9. Testing Senatorial Management Gateway (management.php)...\n";
+unset($_GET['district'], $_GET['action']);
+ob_start();
+include __DIR__ . '/../management.php';
+$mgmt_gateway_html = ob_get_clean();
+assert_test(strlen($mgmt_gateway_html) > 500, "management.php renders management gateway");
+assert_test(strpos($mgmt_gateway_html, 'Senatorial District Management Command') !== false, "Contains Management Gateway title");
+assert_test(strpos($mgmt_gateway_html, 'Adamawa North') !== false && strpos($mgmt_gateway_html, 'Adamawa Central') !== false && strpos($mgmt_gateway_html, 'Adamawa South') !== false, "Gateway contains all 3 Senatorial Districts");
+
+// TEST 10: Dedicated District Management Dashboards
+echo "\n10. Testing Dedicated District Management Dashboards...\n";
+ob_start();
+include __DIR__ . '/../management_north.php';
+$north_html = ob_get_clean();
+assert_test(strpos($north_html, 'Adamawa North Senatorial District') !== false, "management_north.php renders North Command");
+assert_test(strpos($north_html, 'Mubi') !== false, "North Command displays Mubi Zonal HQ");
+assert_test(strpos($north_html, 'LGA Coordinators Command Roster') !== false, "North Command displays Coordinators Desk");
+
+ob_start();
+include __DIR__ . '/../management_central.php';
+$central_html = ob_get_clean();
+assert_test(strpos($central_html, 'Adamawa Central Senatorial District') !== false, "management_central.php renders Central Command");
+assert_test(strpos($central_html, 'Yola') !== false, "Central Command displays Yola Zonal HQ");
+
+ob_start();
+include __DIR__ . '/../management_south.php';
+$south_html = ob_get_clean();
+assert_test(strpos($south_html, 'Adamawa South Senatorial District') !== false, "management_south.php renders South Command");
+assert_test(strpos($south_html, 'Numan') !== false, "South Command displays Numan Zonal HQ");
+
+// TEST 11: Management Action APIs
+echo "\n11. Testing Management Action APIs...\n";
+$cmd_coord = 'php -r \'$_GET["action"] = "management_coordinators"; $_GET["district"] = "central"; require "' . addslashes(__DIR__ . '/../api.php') . '";\'';
+$coord_resp = json_decode(shell_exec($cmd_coord), true);
+assert_test($coord_resp && $coord_resp["success"] === true, "management_coordinators returns success");
+assert_test(count($coord_resp["coordinators"] ?? []) === 7, "Central returns 7 LGA coordinators");
+
+$cmd_bcast = 'php -r \'$_POST["district"] = "north"; $_POST["title"] = "Test Management Directive"; $_POST["body"] = "Strict compliance required"; $_GET["action"] = "management_broadcast"; require "' . addslashes(__DIR__ . '/../api.php') . '";\'';
+$bcast_resp = json_decode(shell_exec($cmd_bcast), true);
+assert_test($bcast_resp && $bcast_resp["success"] === true, "management_broadcast dispatches directive successfully");
+
 echo "\n============================================\n";
 echo "TESTS RUN: {$tests_total}, PASSED: {$tests_passed}, FAILED: " . ($tests_total - $tests_passed) . "\n";
 if ($tests_passed === $tests_total) {

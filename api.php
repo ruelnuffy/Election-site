@@ -294,6 +294,41 @@ if ($action === 'senatorial_agents') {
     exit;
 }
 
+if ($action === 'management_coordinators' || $action === 'senatorial_coordinators') {
+    require_once __DIR__ . '/lib/senatorial_service.php';
+    $district_key = strtolower(trim($_GET['district'] ?? $_POST['district'] ?? 'north'));
+    echo json_encode(get_senatorial_coordinators_data($pdo, $district_key));
+    exit;
+}
+
+if ($action === 'management_result_sheets' || $action === 'senatorial_sheets') {
+    require_once __DIR__ . '/lib/senatorial_service.php';
+    $district_key = strtolower(trim($_GET['district'] ?? $_POST['district'] ?? 'north'));
+    $limit = (int)($_GET['limit'] ?? $_POST['limit'] ?? 50);
+    echo json_encode(get_senatorial_result_sheets($pdo, $district_key, $limit));
+    exit;
+}
+
+if ($action === 'management_update_incident') {
+    require_once __DIR__ . '/lib/senatorial_service.php';
+    $id = (int)($_POST['id'] ?? $_GET['id'] ?? 0);
+    $status = trim($_POST['status'] ?? $_GET['status'] ?? 'in-progress');
+    $severity = trim($_POST['severity'] ?? $_GET['severity'] ?? 'normal');
+    $note = trim($_POST['resolution_note'] ?? $_GET['resolution_note'] ?? '');
+    echo json_encode(management_update_incident($pdo, $id, $status, $severity, $note));
+    exit;
+}
+
+if ($action === 'management_broadcast') {
+    require_once __DIR__ . '/lib/senatorial_service.php';
+    $district_key = strtolower(trim($_POST['district'] ?? $_GET['district'] ?? 'north'));
+    $title = trim($_POST['title'] ?? $_GET['title'] ?? '');
+    $body = trim($_POST['body'] ?? $_GET['body'] ?? '');
+    $priority = trim($_POST['priority'] ?? $_GET['priority'] ?? 'urgent');
+    echo json_encode(management_dispatch_broadcast($pdo, $district_key, $title, $body, $priority));
+    exit;
+}
+
 // 4. CHECK AUTH STATUS
 if ($action === 'check_auth' || $action === 'check') {
     if (is_authenticated()) {

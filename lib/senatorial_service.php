@@ -483,3 +483,158 @@ function get_senatorial_ward_breakdown_data(PDO $pdo, int $lga_id, string $lga_n
     ];
 }
 
+/**
+ * LGA Coordinators Command Desk for a Senatorial District
+ */
+function get_senatorial_coordinators_data(PDO $pdo, string $district_key): array {
+    $district = get_senatorial_district($district_key) ?: get_senatorial_district('north');
+    $lgas = $district['lgas'];
+    $coordinators = [];
+
+    foreach ($lgas as $lga_name) {
+        $stmt_lga = $pdo->prepare("SELECT id, name, code FROM lgas WHERE LOWER(name) = LOWER(?) LIMIT 1");
+        $stmt_lga->execute([$lga_name]);
+        $lga = $stmt_lga->fetch(PDO::FETCH_ASSOC);
+        $lga_id = $lga ? (int)$lga['id'] : 0;
+
+        $stmt_adm = $pdo->prepare("SELECT id, name, email, status, last_login_at FROM admins WHERE lga_id = ? AND role = 'coordinator' LIMIT 1");
+        $stmt_adm->execute([$lga_id]);
+        $admin = $stmt_adm->fetch(PDO::FETCH_ASSOC);
+
+        $stmt_stat = $pdo->prepare("
+            SELECT 
+                COUNT(*) as total_pus,
+                (SELECT COUNT(DISTINCT polling_unit) FROM result_sheets WHERE is_current = 1 AND LOWER(lga) = LOWER(?)) as reported_pus
+            FROM polling_units p
+            JOIN wards w ON p.ward_id = w.id
+            WHERE w.lga_id = ?
+        ");
+        $stmt_stat->execute([$lga_name, $lga_id]);
+        $stat = $stmt_stat->fetch(PDO::FETCH_ASSOC);
+
+        $total_pus = (int)($stat['total_pus'] ?? 0);
+        $reported_pus = (int)($stat['reported_pus'] ?? 0);
+        $pct = $total_pus > 0 ? round(($reported_pus / $total_pus) * 100, 1) : 0;
+
+        $coordinators[] = [
+            'lga_id' => $lga_id,
+            'lga_name' => $lga_name,
+            'coordinator_name' => $admin['name'] ?? 'Unassigned LGA Coordinator',
+            'coordinator_email' => $admin['email'] ?? 'coordinator.' . strtolower(str_replace(' ', '', $lga_name)) . '@sia2027.ng',
+            'status' => $admin['status'] ?? 'active',
+            'last_login_at' => $admin['last_login_at'] ?? 'Never',
+            'total_pus' => $total_pus,
+            'reported_pus' => $reported_pus,
+            'reporting_percentage' => $pct
+        ];
+    }
+
+    return [
+        'success' => true,
+        'district' => $district,
+        'coordinators' => $coordinators
+    ];
+}
+
+/**
+ * Transmitted Result Sheets & EC8A Inspection for a Senatorial District
+ */
+function get_senatorial_result_sheets(PDO $pdo, string $district_key, int $limit = 50): array {
+    $district = get_senatorial_district($district_key) ?: get_senatorial_district('north');
+    $lgas = $district ? $district['lgas'] : [];
+    $lga_lowers = array_map('strtolower', $lgas);
+    $placeholders = !empty($lgas) ? implode(',', array_fill(0, count($lgas), '?')) : "''";
+
+    $stmt = $pdo->prepare("
+        SELECT 
+            r.id, r.lga, r.ward, r.polling_unit, r.ec8a_image, r.image_sha256,
+            r.transmission_status, r.verification_status, r.created_at,
+            r.lp_votes, r.apc_votes, r.pdp_votes, r.nnpp_votes, r.sdp_votes,
+            r.total_valid_votes, r.total_accredited_voters, r.rejected_votes,
+            a.name as agent_name, a.agent_code, a.photo as agent_photo
+        FROM result_sheets r
+        LEFT JOIN agents a ON r.agent_id = a.id
+        WHERE r.is_current = 1 AND LOWER(r.lga) IN ($placeholders)
+        ORDER BY r.id DESC
+        LIMIT ?
+    ");
+    
+    $params = array_merge($lga_lowers, [$limit]);
+    $stmt->execute($params);
+    $sheets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    return [
+        'success' => true,
+        'district' => $district,
+        'sheets' => $sheets
+    ];
+}
+
+/**
+ * Management Action: Update Incident Status & Resolution Note
+ */
+function management_update_incident(PDO $pdo, int $incident_id, string $status, string $severity, string $resolution_note): array {
+    if ($incident_id <= 0) {
+        return ['success' => false, 'message' => 'Invalid incident ID.'];
+    }
+
+    $chk = $pdo->prepare("SELECT id, lga, ward, polling_unit, title FROM incidents WHERE id = ?");
+    $chk->execute([$incident_id]);
+    $inc = $chk->fetch(PDO::FETCH_ASSOC);
+    if (!$inc) {
+        return ['success' => false, 'message' => 'Incident record not found.'];
+    }
+
+    $resolved_at = in_array($status, ['resolved', 'closed'], true) ? date('Y-m-d H:i:s') : null;
+
+    $stmt = $pdo->prepare("
+        UPDATE incidents
+        SET status = ?, severity = ?, resolution_note = ?, resolved_at = COALESCE(?, resolved_at)
+        WHERE id = ?
+    ");
+    $stmt->execute([$status, $severity, $resolution_note, $resolved_at, $incident_id]);
+
+    return [
+        'success' => true,
+        'message' => "Incident #{$incident_id} successfully updated to status: {$status}."
+    ];
+}
+
+/**
+ * Management Action: Dispatch Broadcast to Field Agents in Senatorial District
+ */
+function management_dispatch_broadcast(PDO $pdo, string $district_key, string $title, string $body, string $priority = 'urgent'): array {
+    $district = get_senatorial_district($district_key);
+    if (!$district) {
+        return ['success' => false, 'message' => 'Invalid Senatorial District.'];
+    }
+
+    if (empty(trim($title)) || empty(trim($body))) {
+        return ['success' => false, 'message' => 'Broadcast title and message body are required.'];
+    }
+
+    // Author ID: Fallback to Lead Admin (2)
+    $author_id = 2;
+    $adm_stmt = $pdo->query("SELECT id FROM admins WHERE role = 'superadmin' LIMIT 1");
+    if ($adm_id = $adm_stmt->fetchColumn()) {
+        $author_id = (int)$adm_id;
+    }
+
+    $audience = "district:{$district_key}";
+    $expires_at = date('Y-m-d H:i:s', strtotime('+72 hours'));
+
+    $stmt = $pdo->prepare("
+        INSERT INTO announcements (title, body, audience, priority, created_by, created_at, expires_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now'), ?)
+    ");
+    $stmt->execute([$title, $body, $audience, $priority, $author_id, $expires_at]);
+    $ann_id = (int)$pdo->lastInsertId();
+
+    return [
+        'success' => true,
+        'message' => "Directive successfully dispatched to all accredited agents in {$district['short_name']}!",
+        'announcement_id' => $ann_id
+    ];
+}
+
+
