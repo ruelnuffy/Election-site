@@ -686,9 +686,10 @@ $can_submit = ($agent['status'] === 'accredited');
                 required 
                 class="w-full bg-white text-slate-900 font-semibold border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 transition-all appearance-none cursor-pointer pr-10 shadow-xs"
               >
-                <option value="Reporting on PU ground" selected>1. Reporting on PU ground</option>
-                <option value="Took me 10 mins to get internet">2. Took me 10 mins to get internet</option>
-                <option value="I have to travel for 30 mins to get internet">3. I have to travel for 30 mins to get internet</option>
+                <option value="ON-SITE" selected>1. ON-SITE</option>
+                <option value="OFFSITE">2. OFFSITE</option>
+                <option value="2km away">3. 2km away</option>
+                <option value="5 km away">4. 5 km away</option>
               </select>
               <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-500">
                 <span class="material-symbols-outlined text-base">expand_more</span>
@@ -785,7 +786,7 @@ $can_submit = ($agent['status'] === 'accredited');
 
                   <div class="flex items-center gap-1.5 text-xs text-slate-700 bg-white px-3 py-1.5 rounded-xl border border-slate-200">
                     <span class="material-symbols-outlined text-xs text-emerald-700">cell_tower</span>
-                    <span class="text-[11px] font-semibold text-slate-800"><?= htmlspecialchars($res['transmission_status'] ?? 'Reporting on PU ground') ?></span>
+                    <span class="text-[11px] font-semibold text-slate-800"><?= htmlspecialchars($res['transmission_status'] ?? 'ON-SITE') ?></span>
                   </div>
 
                   <?php if (!empty($res['review_note'])): ?>

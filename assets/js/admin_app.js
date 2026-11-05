@@ -632,9 +632,9 @@ async function renderReviewQueueModule(container) {
                     <span class="font-bold text-slate-900 block text-sm">${escapeHtml(s.polling_unit)}</span>
                     <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
                       <span class="text-xs text-slate-500">${escapeHtml(s.ward)}, ${escapeHtml(s.lga)}</span>
-                      <span class="inline-flex items-center gap-1 text-[10px] font-semibold ${s.transmission_status && s.transmission_status.includes('30 mins') ? 'text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200' : (s.transmission_status && s.transmission_status.includes('10 mins') ? 'text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200' : 'text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200')}">
+                      <span class="inline-flex items-center gap-1 text-[10px] font-semibold ${s.transmission_status && (s.transmission_status.includes('5 km') || s.transmission_status.includes('5km') || s.transmission_status.includes('30 min')) ? 'text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200' : (s.transmission_status && (s.transmission_status.includes('2km') || s.transmission_status.includes('OFFSITE') || s.transmission_status.includes('10 min')) ? 'text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200' : 'text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200')}">
                         <span class="material-symbols-outlined text-[11px] leading-none">cell_tower</span>
-                        <span>${escapeHtml(s.transmission_status || 'Reporting on PU ground')}</span>
+                        <span>${escapeHtml(s.transmission_status || 'ON-SITE')}</span>
                       </span>
                     </div>
                   </td>
@@ -796,12 +796,12 @@ const ADMIN_OFFICIAL_PARTIES = [
 
   const transStatusEl = document.getElementById('detail_transmission_status');
   if (transStatusEl) {
-    const statusVal = s.transmission_status || 'Reporting on PU ground';
+    const statusVal = s.transmission_status || 'ON-SITE';
     transStatusEl.textContent = statusVal;
-    if (statusVal.includes('30 mins')) {
+    if (statusVal.includes('5 km') || statusVal.includes('5km') || statusVal.includes('30 min')) {
+      transStatusEl.className = 'text-[11px] font-bold text-rose-800 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200';
+    } else if (statusVal.includes('2km') || statusVal.includes('OFFSITE') || statusVal.includes('10 min')) {
       transStatusEl.className = 'text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200';
-    } else if (statusVal.includes('10 mins')) {
-      transStatusEl.className = 'text-[11px] font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200';
     } else {
       transStatusEl.className = 'text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200';
     }

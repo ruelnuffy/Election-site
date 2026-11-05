@@ -16,10 +16,14 @@ $manager = require_district_manager_auth();
 $districts = get_senatorial_districts();
 $manager_district = $manager['district'] ?? 'north';
 
-// Allow viewing specific district if manager has access or explicitly switched
-$district_param = strtolower(trim($_GET['district'] ?? $manager_district));
-if (!isset($districts[$district_param])) {
-    $district_param = isset($districts[$manager_district]) ? $manager_district : 'north';
+// Scoped strictly to the authenticated district manager's command
+if ($manager_district !== 'all' && isset($districts[$manager_district])) {
+    $district_param = $manager_district;
+} else {
+    $district_param = strtolower(trim($_GET['district'] ?? 'north'));
+    if (!isset($districts[$district_param])) {
+        $district_param = 'north';
+    }
 }
 $active_district = $districts[$district_param];
 ?>
@@ -120,25 +124,15 @@ $active_district = $districts[$district_param];
         </span>
       </div>
 
-      <!-- District Switcher Segmented Control -->
-      <div>
-        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 px-1">
-          Senatorial District
+      <!-- Assigned Command Badge -->
+      <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex items-center justify-between text-xs">
+        <div>
+          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Command Zone</span>
+          <span class="font-bold text-slate-900 text-xs block mt-0.5"><?= htmlspecialchars($active_district['name']) ?></span>
         </div>
-        <div class="bg-slate-100 p-1 rounded-xl grid grid-cols-3 gap-1 text-center">
-          <a href="management.php?district=north" 
-             class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-decoration-none <?= $district_param === 'north' ? 'bg-white text-emerald-700 shadow-xs ring-1 ring-slate-200/50' : 'text-slate-500 hover:text-slate-900' ?>">
-            North
-          </a>
-          <a href="management.php?district=central" 
-             class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-decoration-none <?= $district_param === 'central' ? 'bg-white text-emerald-700 shadow-xs ring-1 ring-slate-200/50' : 'text-slate-500 hover:text-slate-900' ?>">
-            Central
-          </a>
-          <a href="management.php?district=south" 
-             class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-decoration-none <?= $district_param === 'south' ? 'bg-white text-emerald-700 shadow-xs ring-1 ring-slate-200/50' : 'text-slate-500 hover:text-slate-900' ?>">
-            South
-          </a>
-        </div>
+        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <?= htmlspecialchars($active_district['code']) ?>
+        </span>
       </div>
     </div>
 
@@ -337,14 +331,14 @@ $active_district = $districts[$district_param];
             <div class="flex items-center justify-between">
               <span class="flex items-center gap-1.5 text-slate-600">
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>Direct on PU Ground</span>
+                <span>Direct ON-SITE</span>
               </span>
               <strong class="font-mono text-slate-900 font-bold" id="teleGround">0</strong>
             </div>
             <div class="flex items-center justify-between">
               <span class="flex items-center gap-1.5 text-slate-600">
                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                <span>Transit Upload (10-30m)</span>
+                <span>OFFSITE (2km - 5km)</span>
               </span>
               <strong class="font-mono text-slate-900 font-bold" id="tele10m">0</strong>
             </div>
@@ -352,7 +346,7 @@ $active_district = $districts[$district_param];
           </div>
           <div class="text-xs text-slate-500 border-t border-slate-100 pt-2 flex items-center justify-between">
             <span>Transmission Health:</span>
-            <span class="text-emerald-700 font-bold text-xs" id="teleAuditConf">High (PU Direct)</span>
+            <span class="text-emerald-700 font-bold text-xs" id="teleAuditConf">High (ON-SITE)</span>
           </div>
         </div>
 
@@ -779,7 +773,7 @@ $active_district = $districts[$district_param];
       
       const totalUploads = tele.ground + tele.transit_10m + tele.transit_30m;
       const groundRatio = totalUploads > 0 ? (tele.ground / totalUploads) * 100 : 100;
-      document.getElementById('teleAuditConf').textContent = groundRatio >= 80 ? 'High (PU Direct)' : 'Medium (Transit)';
+      document.getElementById('teleAuditConf').textContent = groundRatio >= 80 ? 'High (ON-SITE)' : 'OFFSITE / Remote';
     }
 
     function renderExecutiveReport(data) {
@@ -801,8 +795,8 @@ $active_district = $districts[$district_param];
       const tele = data.transmission_health || { ground: 0, transit_10m: 0, transit_30m: 0 };
       const tot = tele.ground + tele.transit_10m + tele.transit_30m;
       const pctGround = tot > 0 ? Math.round((tele.ground / tot) * 100) : 100;
-      document.getElementById('repGroundSummary').textContent = `${pctGround}% Direct PU Ground`;
-      document.getElementById('repGroundNote').textContent = `${tele.ground} PU ground uploads vs ${tele.transit_10m + tele.transit_30m} transit uploads.`;
+      document.getElementById('repGroundSummary').textContent = `${pctGround}% ON-SITE`;
+      document.getElementById('repGroundNote').textContent = `${tele.ground} ON-SITE uploads vs ${tele.transit_10m + tele.transit_30m} OFFSITE / distant transmissions.`;
 
       // 4. Candidate Party Breakdown in Report
       const pList = document.getElementById('repPartyList');
@@ -986,7 +980,7 @@ $active_district = $districts[$district_param];
 
               <div class="border-t border-slate-100 pt-2 flex items-center justify-between text-[11px] text-slate-500">
                 <span class="truncate">Agent: ${escapeHtml(s.agent_name || s.agent_code || 'Accredited')}</span>
-                <span class="text-emerald-700 font-medium">${escapeHtml(s.transmission_status || 'PU Ground')}</span>
+                <span class="text-emerald-700 font-medium">${escapeHtml(s.transmission_status || 'ON-SITE')}</span>
               </div>
             </div>
           `;
@@ -1108,7 +1102,7 @@ $active_district = $districts[$district_param];
                 <div class="text-[11px] text-slate-500 truncate mt-0.5">${escapeHtml(ag.lga)} &bull; ${escapeHtml(ag.ward || 'Ward')}</div>
                 <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span>${escapeHtml(ag.latest_transmission || 'On PU Ground')}</span>
+                  <span>${escapeHtml(ag.latest_transmission || 'ON-SITE')}</span>
                 </div>
               </div>
             </div>

@@ -148,7 +148,7 @@
               <div class="flex items-center gap-1.5 pt-1 border-t border-slate-200">
                 <span class="material-symbols-outlined text-xs text-emerald-700">cell_tower</span>
                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ground Status:</span>
-                <span id="detail_transmission_status" class="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Reporting on PU ground</span>
+                <span id="detail_transmission_status" class="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">ON-SITE</span>
               </div>
               <p id="detail_notes" class="text-slate-600 text-[11px] italic m-0 pt-1 border-t border-slate-200"></p>
             </div>

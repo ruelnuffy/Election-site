@@ -673,14 +673,20 @@ if ($action === 'submit_result') {
     $total_accredited = max(0, intval($_POST['total_accredited'] ?? 0));
     $notes = sanitize($_POST['notes'] ?? '');
 
-    $transmission_status = sanitize($_POST['transmission_status'] ?? 'Reporting on PU ground');
+    $transmission_status = sanitize($_POST['transmission_status'] ?? 'ON-SITE');
     $valid_statuses = [
+        'ON-SITE',
+        'OFFSITE',
+        '2km away',
+        '5 km away',
+        '5km away',
+        // Backward compatibility
         'Reporting on PU ground',
         'Took me 10 mins to get internet',
         'I have to travel for 30 mins to get internet'
     ];
     if (!in_array($transmission_status, $valid_statuses, true)) {
-        $transmission_status = 'Reporting on PU ground';
+        $transmission_status = 'ON-SITE';
     }
 
     $tally_data = $party_votes;

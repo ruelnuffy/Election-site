@@ -51,7 +51,7 @@ function get_senatorial_overview_data(PDO $pdo, string $district_key): array {
     // 3. Ground Transmission Telemetry
     $stmt_trans = $pdo->prepare("
         SELECT 
-            COALESCE(transmission_status, 'Reporting on PU ground') as status,
+            COALESCE(transmission_status, 'ON-SITE') as status,
             COUNT(*) as count
         FROM result_sheets
         WHERE is_current = 1 AND LOWER(lga) IN ($placeholders)
@@ -67,11 +67,11 @@ function get_senatorial_overview_data(PDO $pdo, string $district_key): array {
     ];
     foreach ($trans_rows as $tr) {
         $st = strtolower($tr['status'] ?? '');
-        if (str_contains($st, 'ground')) {
+        if (str_contains($st, 'on-site') || str_contains($st, 'ground')) {
             $transmission_stats['ground'] += (int)$tr['count'];
-        } elseif (str_contains($st, '10 min')) {
+        } elseif (str_contains($st, '2km') || str_contains($st, 'offsite') || str_contains($st, '10 min')) {
             $transmission_stats['transit_10m'] += (int)$tr['count'];
-        } elseif (str_contains($st, '30 min')) {
+        } elseif (str_contains($st, '5km') || str_contains($st, '5 km') || str_contains($st, '30 min')) {
             $transmission_stats['transit_30m'] += (int)$tr['count'];
         } else {
             $transmission_stats['ground'] += (int)$tr['count'];
