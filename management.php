@@ -1,27 +1,34 @@
 <?php
 /**
- * SIA 2027 Senatorial District Management Command Portal
- * Dedicated Executive Management Dashboard for Every Senatorial District
- * Completely Separate from IT Admin Sign-in • Zero-Friction Leadership Access
+ * SIA 2027 Senatorial District Management Command Dashboard
+ * One Unified Management Dashboard with Real-Time Analytics & Reports
+ * Authenticated per District via district_managers table in database
  */
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/lib/auth.php';
+
+start_secure_session();
+
+// Enforce District Manager Authentication
+$manager = require_district_manager_auth();
+
 $districts = get_senatorial_districts();
+$manager_district = $manager['district'] ?? 'north';
 
-$district_param = strtolower(trim($_GET['district'] ?? ''));
-$is_gateway = empty($district_param) || !isset($districts[$district_param]);
-
-if (!$is_gateway) {
-    $active_district = $districts[$district_param];
+// Allow viewing specific district if manager has access or explicitly switched
+$district_param = strtolower(trim($_GET['district'] ?? $manager_district));
+if (!isset($districts[$district_param])) {
+    $district_param = isset($districts[$manager_district]) ? $manager_district : 'north';
 }
+$active_district = $districts[$district_param];
 ?>
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-900 text-slate-100 scroll-smooth">
+<html lang="en" class="h-full bg-slate-950 text-slate-100 scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>
-    <?= $is_gateway ? 'SIA 2027 | Senatorial Districts Management Gateway' : htmlspecialchars($active_district['name']) . ' &bull; Management Command' ?>
-  </title>
+  <title>SIA 2027 | <?= htmlspecialchars($active_district['name']) ?> &bull; Management Command</title>
   <link rel="icon" type="image/png" href="./assets/images/logos/lp_logo.png">
 
   <!-- Typography: Plus Jakarta Sans & Outfit -->
@@ -79,6 +86,11 @@ if (!$is_gateway) {
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+    @media print {
+      body { background: white !important; color: black !important; }
+      header, .no-print { display: none !important; }
+      .print-only { display: block !important; }
+    }
   </style>
 </head>
 <body class="min-h-full flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-emerald-600 selection:text-white">
@@ -86,7 +98,7 @@ if (!$is_gateway) {
   <!-- =========================================================================
        1. EXECUTIVE MANAGEMENT TOPBAR
        ========================================================================= -->
-  <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800">
+  <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 no-print">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16 sm:h-20 gap-3">
         
@@ -101,43 +113,46 @@ if (!$is_gateway) {
                 SIA 2027
               </span>
               <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                District Management
+                Management Command
               </span>
             </div>
             <span class="text-xs text-slate-400 hidden sm:block">
-              <?= $is_gateway ? 'Senatorial Districts Command Gateway' : htmlspecialchars($active_district['name']) ?>
+              <?= htmlspecialchars($active_district['name']) ?> &bull; Zonal HQ: <?= htmlspecialchars($active_district['hq']) ?>
             </span>
           </div>
         </a>
 
-        <!-- Right: Actions -->
+        <!-- Right: Actions & User Badge -->
         <div class="flex items-center gap-2 sm:gap-3">
           
           <!-- Live Telemetry Pill -->
           <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-subtle"></span>
-            <span class="hidden sm:inline">LIVE COMMAND ROOM</span>
+            <span class="hidden sm:inline">LIVE FEED</span>
             <span class="sm:hidden">LIVE</span>
           </div>
 
-          <?php if (!$is_gateway): ?>
-            <!-- Back to Gateway -->
-            <a href="management.php" class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3.5 py-2 rounded-xl transition-all">
-              <span class="material-symbols-outlined text-sm">grid_view</span>
-              <span class="hidden md:inline">All Districts</span>
-            </a>
-          <?php endif; ?>
-
-          <!-- Situation Room Link -->
-          <a href="index.php" class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 border border-slate-700/80 px-3.5 py-2 rounded-xl transition-all">
-            <span class="material-symbols-outlined text-sm">home</span>
-            <span class="hidden lg:inline">Situation Room</span>
-          </a>
+          <!-- Logged in Manager Info -->
+          <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs">
+            <div class="w-7 h-7 rounded-lg bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-sm">person</span>
+            </div>
+            <div class="text-left">
+              <span class="font-bold text-white block leading-tight truncate max-w-[140px]"><?= htmlspecialchars($manager['name']) ?></span>
+              <span class="text-[10px] text-slate-400 font-mono block leading-tight truncate"><?= htmlspecialchars($manager['email']) ?></span>
+            </div>
+          </div>
 
           <!-- Manual Refresh -->
           <button onclick="refreshDistrictData()" id="refreshBtn" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors border border-slate-800" title="Refresh Live District Feed">
             <span class="material-symbols-outlined text-lg leading-none" id="refreshIcon">refresh</span>
           </button>
+
+          <!-- Sign Out -->
+          <a href="management_logout.php" class="inline-flex items-center gap-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-3 py-2 rounded-xl transition-colors" title="Sign Out of District Management">
+            <span class="material-symbols-outlined text-sm">logout</span>
+            <span class="hidden sm:inline">Sign Out</span>
+          </a>
 
         </div>
 
@@ -145,174 +160,13 @@ if (!$is_gateway) {
     </div>
   </header>
 
-  <?php if ($is_gateway): ?>
   <!-- =========================================================================
-       2. GATEWAY VIEW: SELECT YOUR SENATORIAL DISTRICT
-       ========================================================================= -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-    
-    <!-- Hero Banner -->
-    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-4">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-        <span class="material-symbols-outlined text-sm">shield</span>
-        <span>Electoral Operation Command</span>
-      </div>
-      <h1 class="text-2xl sm:text-4xl font-black text-white tracking-tight">
-        Senatorial District Management Command
-      </h1>
-      <p class="text-sm sm:text-base text-slate-400 max-w-3xl leading-relaxed">
-        Select a Senatorial District to access its dedicated management dashboard. Each zonal command provides direct operational controls: LGA coordinators communication desk, real-time Section 179(2)(b) constitutional spread tracking, Form EC8A sheet inspection, district incident resolution, and direct agent broadcast dispatching.
-      </p>
-    </div>
-
-    <!-- 3 Senatorial District Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      
-      <!-- Adamawa North -->
-      <?php $d_north = $districts['north']; ?>
-      <div class="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-6 shadow-xl flex flex-col justify-between transition-all group">
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
-              <?= $d_north['code'] ?>
-            </span>
-            <span class="text-xs font-semibold text-slate-400">HQ: <strong class="text-white"><?= $d_north['hq'] ?></strong></span>
-          </div>
-          <div>
-            <h2 class="text-xl font-black text-white group-hover:text-emerald-400 transition-colors">
-              <?= $d_north['short_name'] ?>
-            </h2>
-            <p class="text-xs text-slate-400 mt-1">
-              <?= $d_north['strategic_role'] ?>
-            </p>
-          </div>
-          <div class="bg-slate-950/60 rounded-xl p-3.5 space-y-2 border border-slate-800 text-xs">
-            <div class="flex items-center justify-between text-slate-400">
-              <span>Local Governments:</span>
-              <strong class="text-white font-mono">5 LGAs</strong>
-            </div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span>Polling Units:</span>
-              <strong class="text-white font-mono">924 PUs</strong>
-            </div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span>Registered Voters:</span>
-              <strong class="text-white font-mono">605,876</strong>
-            </div>
-          </div>
-          <div class="text-[11px] text-slate-500">
-            <strong>LGAs:</strong> Madagali, Maiha, Michika, Mubi North, Mubi South
-          </div>
-        </div>
-        <div class="pt-6">
-          <a href="management.php?district=north" class="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-lg shadow-emerald-950 transition-all">
-            <span>Open North Management Command</span>
-            <span class="material-symbols-outlined text-sm">arrow_forward</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- Adamawa Central -->
-      <?php $d_central = $districts['central']; ?>
-      <div class="bg-slate-900 border border-slate-800 hover:border-blue-500/50 rounded-2xl p-6 shadow-xl flex flex-col justify-between transition-all group">
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">
-              <?= $d_central['code'] ?>
-            </span>
-            <span class="text-xs font-semibold text-slate-400">HQ: <strong class="text-white"><?= $d_central['hq'] ?></strong></span>
-          </div>
-          <div>
-            <h2 class="text-xl font-black text-white group-hover:text-blue-400 transition-colors">
-              <?= $d_central['short_name'] ?>
-            </h2>
-            <p class="text-xs text-slate-400 mt-1">
-              <?= $d_central['strategic_role'] ?>
-            </p>
-          </div>
-          <div class="bg-slate-950/60 rounded-xl p-3.5 space-y-2 border border-slate-800 text-xs">
-            <div class="flex items-center justify-between text-slate-400">
-              <span>Local Governments:</span>
-              <strong class="text-white font-mono">7 LGAs</strong>
-            </div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span>Polling Units:</span>
-              <strong class="text-white font-mono">1,686 PUs</strong>
-            </div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span>Registered Voters:</span>
-              <strong class="text-white font-mono">1,104,880</strong>
-            </div>
-          </div>
-          <div class="text-[11px] text-slate-500">
-            <strong>LGAs:</strong> Fufore, Girei, Gombi, Hong, Song, Yola North, Yola South
-          </div>
-        </div>
-        <div class="pt-6">
-          <a href="management.php?district=central" class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-lg shadow-blue-950 transition-all">
-            <span>Open Central Management Command</span>
-            <span class="material-symbols-outlined text-sm">arrow_forward</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- Adamawa South -->
-      <?php $d_south = $districts['south']; ?>
-      <div class="bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-6 shadow-xl flex flex-col justify-between transition-all group">
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
-              <?= $d_south['code'] ?>
-            </span>
-            <span class="text-xs font-semibold text-slate-400">HQ: <strong class="text-white"><?= $d_south['hq'] ?></strong></span>
-          </div>
-          <div>
-            <h2 class="text-xl font-black text-white group-hover:text-amber-400 transition-colors">
-              <?= $d_south['short_name'] ?>
-            </h2>
-            <p class="text-xs text-slate-400 mt-1">
-              <?= $d_south['strategic_role'] ?>
-            </p>
-          </div>
-          <div class="bg-slate-950/60 rounded-xl p-3.5 space-y-2 border border-slate-800 text-xs">
-            <div class="flex items-center justify-between text-slate-400">
-              <span>Local Governments:</span>
-              <strong class="text-white font-mono">9 LGAs</strong>
-            </div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span>Polling Units:</span>
-              <strong class="text-white font-mono">1,491 PUs</strong>
-            </div>
-            <div class="flex items-center justify-between text-slate-400">
-              <span>Registered Voters:</span>
-              <strong class="text-white font-mono">969,815</strong>
-            </div>
-          </div>
-          <div class="text-[11px] text-slate-500">
-            <strong>LGAs:</strong> Demsa, Ganye, Guyuk, Jada, Lamurde, Mayo-Belwa, Numan, Shelleng, Toungo
-          </div>
-        </div>
-        <div class="pt-6">
-          <a href="management.php?district=south" class="w-full inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-lg shadow-amber-950 transition-all">
-            <span>Open South Management Command</span>
-            <span class="material-symbols-outlined text-sm">arrow_forward</span>
-          </a>
-        </div>
-      </div>
-
-    </div>
-
-  </main>
-
-  <?php else: ?>
-
-  <!-- =========================================================================
-       3. DEDICATED DISTRICT MANAGEMENT DASHBOARD VIEW
+       2. DEDICATED DISTRICT MANAGEMENT DASHBOARD VIEW
        ========================================================================= -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
     <!-- District Command Hero Header -->
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4 no-print">
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
@@ -331,7 +185,8 @@ if (!$is_gateway) {
 
         <!-- Management Actions Toolbar -->
         <div class="flex flex-wrap items-center gap-2">
-          <!-- Compose Broadcast Button -->
+          
+          <!-- Dispatch Directive Button -->
           <button onclick="openBroadcastModal()" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold px-3.5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer">
             <span class="material-symbols-outlined text-sm">campaign</span>
             <span>Dispatch Directive</span>
@@ -343,20 +198,21 @@ if (!$is_gateway) {
             <span>Export CSV</span>
           </a>
 
-          <!-- District Switcher Ribbon -->
+          <!-- District Switcher Ribbon (If executive holds multi-district role) -->
           <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
             <a href="management.php?district=north" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors <?= $district_param === 'north' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white' ?>">North</a>
             <a href="management.php?district=central" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors <?= $district_param === 'central' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white' ?>">Central</a>
             <a href="management.php?district=south" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors <?= $district_param === 'south' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white' ?>">South</a>
           </div>
+
         </div>
       </div>
     </div>
 
     <!-- =========================================================================
-         4. CORE MANAGEMENT KPI METRICS
+         3. CORE MANAGEMENT KPI METRICS
          ========================================================================= -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 no-print">
       
       <!-- KPI 1: Labour Party Candidate Lead -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-2">
@@ -454,16 +310,20 @@ if (!$is_gateway) {
     </div>
 
     <!-- =========================================================================
-         5. MANAGEMENT TABS NAVIGATION
+         4. MANAGEMENT TABS NAVIGATION
          ========================================================================= -->
-    <div class="border-b border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
+    <div class="border-b border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar no-print">
       <button onclick="switchManagementTab('collation')" id="mtab-collation" class="management-nav-tab inline-flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-bold border-b-2 border-emerald-500 text-emerald-400 transition-all whitespace-nowrap">
         <span class="material-symbols-outlined text-base">table_chart</span>
-        <span>LGA Collation League</span>
+        <span>Collation League</span>
+      </button>
+      <button onclick="switchManagementTab('reports')" id="mtab-reports" class="management-nav-tab inline-flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all whitespace-nowrap">
+        <span class="material-symbols-outlined text-base">summarize</span>
+        <span>Analytics & Reports</span>
       </button>
       <button onclick="switchManagementTab('coordinators')" id="mtab-coordinators" class="management-nav-tab inline-flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all whitespace-nowrap">
         <span class="material-symbols-outlined text-base">supervisor_account</span>
-        <span>LGA Coordinators Desk</span>
+        <span>Coordinators Desk</span>
       </button>
       <button onclick="switchManagementTab('ec8a')" id="mtab-ec8a" class="management-nav-tab inline-flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all whitespace-nowrap">
         <span class="material-symbols-outlined text-base">image</span>
@@ -471,11 +331,11 @@ if (!$is_gateway) {
       </button>
       <button onclick="switchManagementTab('incidents')" id="mtab-incidents" class="management-nav-tab inline-flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all whitespace-nowrap">
         <span class="material-symbols-outlined text-base">crisis_alert</span>
-        <span>Incident Resolution Desk</span>
+        <span>Incident Desk</span>
       </button>
       <button onclick="switchManagementTab('agents')" id="mtab-agents" class="management-nav-tab inline-flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all whitespace-nowrap">
         <span class="material-symbols-outlined text-base">verified_user</span>
-        <span>Field Agent Telemetry</span>
+        <span>Agent Telemetry</span>
       </button>
     </div>
 
@@ -526,7 +386,71 @@ if (!$is_gateway) {
     </div>
 
     <!-- =========================================================================
-         TAB 2: LGA COORDINATORS DESK
+         TAB 2: ANALYTICS & EXECUTIVE REPORTS
+         ========================================================================= -->
+    <div id="view-reports" class="management-view hidden space-y-6">
+      
+      <!-- Executive Briefing Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">
+              Official Management Briefing
+            </div>
+            <h2 class="text-lg sm:text-xl font-black text-white mt-1">
+              Executive Situation Briefing &bull; <?= htmlspecialchars($active_district['name']) ?>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Prepared for the State Campaign Council & Zonal Leadership</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="window.print()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 transition-all">
+              <span class="material-symbols-outlined text-sm">print</span>
+              <span>Print Briefing</span>
+            </button>
+            <a href="api.php?action=senatorial_lga_breakdown&district=<?= $district_param ?>&export=csv" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow transition-all text-decoration-none">
+              <span class="material-symbols-outlined text-sm">download</span>
+              <span>Export Briefing CSV</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- 3 Executive Report Sections -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
+            <span class="text-xs font-bold text-slate-400 uppercase">1. Constitutional Spread Status</span>
+            <div class="text-lg font-black text-white" id="repSpreadSummary">Auditing LGAs...</div>
+            <p class="text-xs text-slate-400" id="repSpreadNote">Calculation in progress...</p>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
+            <span class="text-xs font-bold text-slate-400 uppercase">2. Candidate Lead Analysis</span>
+            <div class="text-lg font-black text-emerald-400" id="repLeadSummary">Evaluating votes...</div>
+            <p class="text-xs text-slate-400" id="repLeadNote">Tracking margin over 2nd place...</p>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
+            <span class="text-xs font-bold text-slate-400 uppercase">3. Ground Transmission Quality</span>
+            <div class="text-lg font-black text-white" id="repGroundSummary">Telemetry active</div>
+            <p class="text-xs text-slate-400" id="repGroundNote">Auditing direct PU uploads...</p>
+          </div>
+        </div>
+
+        <!-- Candidate Vote Distribution Table in Report -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Candidate Vote Share & Collation Tallies</h3>
+          <div class="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+            <div class="p-4 space-y-3" id="repPartyList">
+              <div class="text-center text-xs text-slate-500 py-4">Generating party vote breakdown...</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- =========================================================================
+         TAB 3: LGA COORDINATORS DESK
          ========================================================================= -->
     <div id="view-coordinators" class="management-view hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-5">
@@ -538,7 +462,7 @@ if (!$is_gateway) {
             </h2>
             <p class="text-xs text-slate-400 mt-0.5">Assigned field leadership per Local Government Area</p>
           </div>
-          <span class="text-xs text-slate-400 font-mono" id="coordCountBadge">5 LGAs</span>
+          <span class="text-xs text-slate-400 font-mono" id="coordCountBadge"><?= count($active_district['lgas']) ?> LGAs</span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="coordinatorsGrid">
@@ -548,7 +472,7 @@ if (!$is_gateway) {
     </div>
 
     <!-- =========================================================================
-         TAB 3: FORM EC8A INSPECTOR
+         TAB 4: FORM EC8A INSPECTOR
          ========================================================================= -->
     <div id="view-ec8a" class="management-view hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-5">
@@ -570,7 +494,7 @@ if (!$is_gateway) {
     </div>
 
     <!-- =========================================================================
-         TAB 4: INCIDENT RESOLUTION DESK
+         TAB 5: INCIDENT RESOLUTION DESK
          ========================================================================= -->
     <div id="view-incidents" class="management-view hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-5">
@@ -592,7 +516,7 @@ if (!$is_gateway) {
     </div>
 
     <!-- =========================================================================
-         TAB 5: FIELD AGENT TELEMETRY ROSTER
+         TAB 6: FIELD AGENT TELEMETRY ROSTER
          ========================================================================= -->
     <div id="view-agents" class="management-view hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-5">
@@ -616,12 +540,11 @@ if (!$is_gateway) {
   </main>
 
   <!-- =========================================================================
-       6. WARD DRILL-DOWN MODAL
+       5. WARD DRILL-DOWN MODAL
        ========================================================================= -->
-  <div id="wardModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
+  <div id="wardModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 no-print">
     <div class="bg-slate-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-800 text-slate-100">
       
-      <!-- Modal Header -->
       <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
         <div>
           <div class="flex items-center gap-2">
@@ -635,12 +558,10 @@ if (!$is_gateway) {
         </button>
       </div>
 
-      <!-- Modal Body -->
       <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3" id="wardModalBody">
         <div class="p-8 text-center text-slate-400">Loading wards...</div>
       </div>
 
-      <!-- Modal Footer -->
       <div class="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between text-xs text-slate-400">
         <span>Verified Ground Collation</span>
         <button onclick="closeWardModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl transition-colors">
@@ -652,9 +573,9 @@ if (!$is_gateway) {
   </div>
 
   <!-- =========================================================================
-       7. DIRECTIVE / BROADCAST MODAL
+       6. DIRECTIVE / BROADCAST MODAL
        ========================================================================= -->
-  <div id="broadcastModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
+  <div id="broadcastModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 no-print">
     <div class="bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden border border-slate-800 text-slate-100">
       
       <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
@@ -708,9 +629,9 @@ if (!$is_gateway) {
   </div>
 
   <!-- =========================================================================
-       8. FORM EC8A IMAGE PREVIEW MODAL
+       7. FORM EC8A IMAGE PREVIEW MODAL
        ========================================================================= -->
-  <div id="imageModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
+  <div id="imageModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 no-print">
     <div class="bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden border border-slate-800 text-slate-100">
       <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
         <span class="text-xs font-bold text-white" id="imageModalTitle">Form EC8A Preview</span>
@@ -725,11 +646,12 @@ if (!$is_gateway) {
   </div>
 
   <!-- =========================================================================
-       9. JAVASCRIPT CONTROLLER FOR MANAGEMENT ACTIONS
+       8. JAVASCRIPT CONTROLLER FOR MANAGEMENT ACTIONS & REPORTS
        ========================================================================= -->
   <script>
     const currentDistrict = '<?= $district_param ?>';
     let autoRefreshTimer = null;
+    let cachedOverviewData = null;
 
     document.addEventListener('DOMContentLoaded', () => {
       loadManagementData();
@@ -753,6 +675,7 @@ if (!$is_gateway) {
         activeView.classList.remove('hidden');
       }
 
+      if (tabName === 'reports' && cachedOverviewData) renderExecutiveReport(cachedOverviewData);
       if (tabName === 'coordinators') loadCoordinators();
       if (tabName === 'ec8a') loadResultSheets();
       if (tabName === 'incidents') loadIncidents();
@@ -779,7 +702,11 @@ if (!$is_gateway) {
           fetch(`api.php?action=senatorial_lga_breakdown&district=${currentDistrict}`).then(r => r.json())
         ]);
 
-        if (overviewRes.success) renderOverviewKPIs(overviewRes);
+        if (overviewRes.success) {
+          cachedOverviewData = overviewRes;
+          renderOverviewKPIs(overviewRes);
+          renderExecutiveReport(overviewRes);
+        }
         if (lgaRes.success) renderLgaTable(lgaRes.lgas);
 
         document.getElementById('lgaUpdatedNotice').textContent = `Live: ${new Date().toLocaleTimeString()}`;
@@ -829,6 +756,45 @@ if (!$is_gateway) {
       const totalTrans = tele.ground + tele.transit_10m + tele.transit_30m;
       const groundRatio = totalTrans > 0 ? (tele.ground / totalTrans) * 100 : 100;
       document.getElementById('teleAuditConf').textContent = groundRatio >= 80 ? 'High (Direct PU)' : 'Medium (Transit Uploads)';
+    }
+
+    function renderExecutiveReport(data) {
+      const kpis = data.kpis;
+      
+      // 1. Spread summary
+      document.getElementById('repSpreadSummary').textContent = `${kpis.passed_25_count} of ${kpis.passed_25_total} LGAs Passed`;
+      document.getElementById('repSpreadNote').textContent = kpis.passed_25_all 
+        ? 'Full Section 179(2)(b) compliance achieved across all local governments.' 
+        : `Statutory 25% threshold deficit in ${kpis.passed_25_total - kpis.passed_25_count} LGA(s).`;
+
+      // 2. Lead summary
+      document.getElementById('repLeadSummary').textContent = (kpis.margin_lead >= 0 ? '+' : '') + Number(kpis.margin_lead).toLocaleString() + ' Votes Margin';
+      document.getElementById('repLeadNote').textContent = kpis.is_leading 
+        ? `Senator Ishaku Abbo (LP) holds the lead with ${kpis.lp_percentage}% of all valid votes.` 
+        : 'Collation underway; monitoring second-round margins.';
+
+      // 3. Ground summary
+      const tele = data.transmission_health || { ground: 0, transit_10m: 0, transit_30m: 0 };
+      const tot = tele.ground + tele.transit_10m + tele.transit_30m;
+      const pctGround = tot > 0 ? Math.round((tele.ground / tot) * 100) : 100;
+      document.getElementById('repGroundSummary').textContent = `${pctGround}% Direct PU Ground`;
+      document.getElementById('repGroundNote').textContent = `${tele.ground} PU ground uploads vs ${tele.transit_10m + tele.transit_30m} transit transmissions.`;
+
+      // 4. Candidate Party Breakdown in Report
+      const pList = document.getElementById('repPartyList');
+      if (data.parties && data.parties.length > 0) {
+        pList.innerHTML = data.parties.slice(0, 5).map(p => `
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold ${p.is_priority ? 'text-emerald-400' : 'text-slate-300'}">${escapeHtml(p.name)} (${escapeHtml(p.code)}) &bull; ${escapeHtml(p.candidate)}</span>
+              <span class="font-mono font-bold text-white">${Number(p.votes).toLocaleString()} votes (${p.percentage}%)</span>
+            </div>
+            <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+              <div class="h-full rounded-full ${p.is_priority ? 'bg-emerald-500' : 'bg-slate-600'}" style="width: ${p.percentage}%"></div>
+            </div>
+          </div>
+        `).join('');
+      }
     }
 
     function renderLgaTable(lgas) {
@@ -1268,7 +1234,6 @@ if (!$is_gateway) {
         .replace(/'/g, '&#039;');
     }
   </script>
-  <?php endif; ?>
 
 </body>
 </html>

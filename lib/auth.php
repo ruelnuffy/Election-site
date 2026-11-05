@@ -134,3 +134,41 @@ function require_admin_auth(array $allowed_roles = []): array {
     return $admin;
 }
 
+// -------------------------------------------------------------
+// District Manager Auth
+// -------------------------------------------------------------
+
+function is_district_manager_authenticated(): bool {
+    return isset($_SESSION['district_manager']) && !empty($_SESSION['district_manager']['id']);
+}
+
+function current_district_manager(): ?array {
+    return $_SESSION['district_manager'] ?? null;
+}
+
+function require_district_manager_auth(?string $required_district = null): array {
+    if (!is_district_manager_authenticated()) {
+        $is_json = (!empty($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))
+            || (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+        $redirect_url = 'management_login.php' . ($required_district ? '?district=' . urlencode($required_district) : '');
+        if ($is_json) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Unauthorized. District Management authentication required.', 'redirect' => $redirect_url]);
+        } else {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Please sign in to access your Senatorial District Management Dashboard.'];
+            header('Location: ' . $redirect_url);
+        }
+        exit;
+    }
+
+    $manager = $_SESSION['district_manager'];
+    if ($required_district !== null && $manager['district'] !== $required_district && $manager['district'] !== 'all') {
+        $redirect_url = 'management_login.php?district=' . urlencode($required_district);
+        header('Location: ' . $redirect_url);
+        exit;
+    }
+
+    return $manager;
+}
+

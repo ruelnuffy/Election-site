@@ -156,39 +156,54 @@ $pub_out2 = shell_exec($cmd2);
 $pub_resp2 = json_decode($pub_out2, true);
 assert_test($pub_resp2 && $pub_resp2['success'] === true, "Public api.php senatorial_agents returns success without auth");
 
-// TEST 9: Dedicated Management Portal Gateway (management.php)
-echo "\n9. Testing Senatorial Management Gateway (management.php)...\n";
-unset($_GET['district'], $_GET['action']);
-ob_start();
-include __DIR__ . '/../management.php';
-$mgmt_gateway_html = ob_get_clean();
-assert_test(strlen($mgmt_gateway_html) > 500, "management.php renders management gateway");
-assert_test(strpos($mgmt_gateway_html, 'Senatorial District Management Command') !== false, "Contains Management Gateway title");
-assert_test(strpos($mgmt_gateway_html, 'Adamawa North') !== false && strpos($mgmt_gateway_html, 'Adamawa Central') !== false && strpos($mgmt_gateway_html, 'Adamawa South') !== false, "Gateway contains all 3 Senatorial Districts");
+// TEST 9: District Managers Table & Database Seeding
+echo "\n9. Testing District Managers Database Storage...\n";
+$dm_stmt = $pdo->query("SELECT district, name, email, status FROM district_managers ORDER BY district ASC");
+$district_managers = $dm_stmt->fetchAll(PDO::FETCH_ASSOC);
+assert_test(count($district_managers) === 3, "district_managers table contains exactly 3 default district directors");
+$emails = array_column($district_managers, 'email');
+assert_test(in_array('north@sia2027.ng', $emails), "North manager account exists in database");
+assert_test(in_array('central@sia2027.ng', $emails), "Central manager account exists in database");
+assert_test(in_array('south@sia2027.ng', $emails), "South manager account exists in database");
 
-// TEST 10: Dedicated District Management Dashboards
-echo "\n10. Testing Dedicated District Management Dashboards...\n";
-ob_start();
-include __DIR__ . '/../management_north.php';
-$north_html = ob_get_clean();
-assert_test(strpos($north_html, 'Adamawa North Senatorial District') !== false, "management_north.php renders North Command");
+// TEST 10: Senatorial Management Login Gateway (management_login.php)
+echo "\n10. Testing Senatorial Management Login Gateway (management_login.php)...\n";
+$cmd_login = 'php -r \'require "' . addslashes(__DIR__ . '/../management_login.php') . '";\'';
+$login_html = shell_exec($cmd_login);
+assert_test(strlen($login_html) > 500, "management_login.php renders login gateway");
+assert_test(strpos($login_html, 'Senatorial District Management Sign In') !== false, "Contains District Management Sign In title");
+assert_test(strpos($login_html, 'Adamawa North') !== false && strpos($login_html, 'Adamawa Central') !== false && strpos($login_html, 'Adamawa South') !== false, "Login Gateway contains tabs for all 3 Senatorial Districts");
+assert_test(strpos($login_html, 'Mubi') !== false, "Displays North Zonal HQ details");
+
+// TEST 11: Unauthenticated Access Guard on management.php
+echo "\n11. Testing Unauthenticated Access Guard...\n";
+$cmd_unauth = 'php -r \'$_SERVER["HTTP_ACCEPT"] = "application/json"; require "' . addslashes(__DIR__ . '/../management.php') . '";\'';
+$unauth_out = shell_exec($cmd_unauth);
+$unauth_resp = json_decode($unauth_out, true);
+assert_test($unauth_resp && $unauth_resp['success'] === false, "Unauthenticated request is rejected");
+assert_test(strpos($unauth_resp['redirect'] ?? '', 'management_login.php') !== false, "Unauthenticated request redirects to management_login.php");
+
+// TEST 12: Authenticated District Management Dashboards
+echo "\n12. Testing Authenticated District Management Dashboards...\n";
+$cmd_auth_north = 'php -r \'session_start(); $_SESSION["district_manager"] = ["id" => 1, "name" => "Hon. Zonal Director", "email" => "north@sia2027.ng", "district" => "north", "district_name" => "Adamawa North Senatorial District", "hq" => "Mubi"]; require "' . addslashes(__DIR__ . '/../management_north.php') . '";\'';
+$north_html = shell_exec($cmd_auth_north);
+assert_test(strpos($north_html, 'Adamawa North Senatorial District') !== false, "management_north.php renders North Command for authenticated manager");
 assert_test(strpos($north_html, 'Mubi') !== false, "North Command displays Mubi Zonal HQ");
 assert_test(strpos($north_html, 'LGA Coordinators Command Roster') !== false, "North Command displays Coordinators Desk");
+assert_test(strpos($north_html, 'Analytics & Reports') !== false, "North Command displays Analytics & Reports");
 
-ob_start();
-include __DIR__ . '/../management_central.php';
-$central_html = ob_get_clean();
+$cmd_auth_central = 'php -r \'session_start(); $_SESSION["district_manager"] = ["id" => 2, "name" => "Hon. Zonal Director", "email" => "central@sia2027.ng", "district" => "central", "district_name" => "Adamawa Central Senatorial District", "hq" => "Yola"]; require "' . addslashes(__DIR__ . '/../management_central.php') . '";\'';
+$central_html = shell_exec($cmd_auth_central);
 assert_test(strpos($central_html, 'Adamawa Central Senatorial District') !== false, "management_central.php renders Central Command");
 assert_test(strpos($central_html, 'Yola') !== false, "Central Command displays Yola Zonal HQ");
 
-ob_start();
-include __DIR__ . '/../management_south.php';
-$south_html = ob_get_clean();
+$cmd_auth_south = 'php -r \'session_start(); $_SESSION["district_manager"] = ["id" => 3, "name" => "Hon. Zonal Director", "email" => "south@sia2027.ng", "district" => "south", "district_name" => "Adamawa South Senatorial District", "hq" => "Numan"]; require "' . addslashes(__DIR__ . '/../management_south.php') . '";\'';
+$south_html = shell_exec($cmd_auth_south);
 assert_test(strpos($south_html, 'Adamawa South Senatorial District') !== false, "management_south.php renders South Command");
 assert_test(strpos($south_html, 'Numan') !== false, "South Command displays Numan Zonal HQ");
 
-// TEST 11: Management Action APIs
-echo "\n11. Testing Management Action APIs...\n";
+// TEST 13: Management Action APIs
+echo "\n13. Testing Management Action APIs...\n";
 $cmd_coord = 'php -r \'$_GET["action"] = "management_coordinators"; $_GET["district"] = "central"; require "' . addslashes(__DIR__ . '/../api.php') . '";\'';
 $coord_resp = json_decode(shell_exec($cmd_coord), true);
 assert_test($coord_resp && $coord_resp["success"] === true, "management_coordinators returns success");

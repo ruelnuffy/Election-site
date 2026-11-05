@@ -361,10 +361,75 @@ function init_database_schema(PDO $pdo): void {
     ");
 
     // ---------------------------------------------------------
-    // 11. Senatorial Districts Synchronization
+    // 11. District Managers Table & Default Accounts
+    // ---------------------------------------------------------
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS district_managers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            district VARCHAR(50) NOT NULL, -- north | central | south
+            name VARCHAR(150) NOT NULL,
+            email VARCHAR(150) UNIQUE NOT NULL,
+            phone VARCHAR(50) DEFAULT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'active',
+            last_login_at DATETIME DEFAULT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    ");
+
+    seed_district_managers_if_empty($pdo);
+
+    // ---------------------------------------------------------
+    // 12. Senatorial Districts Synchronization
     // ---------------------------------------------------------
     sync_senatorial_districts($pdo);
 
+}
+
+/**
+ * Seeds official District Management accounts if table is empty
+ */
+function seed_district_managers_if_empty(PDO $pdo): void {
+    try {
+        $cnt = (int)$pdo->query("SELECT COUNT(*) FROM district_managers")->fetchColumn();
+        if ($cnt === 0) {
+            $default_managers = [
+                [
+                    'district' => 'north',
+                    'name' => 'Hon. Zonal Director (North Command)',
+                    'email' => 'north@sia2027.ng',
+                    'phone' => '0803 100 2027',
+                    'password' => 'North2027!'
+                ],
+                [
+                    'district' => 'central',
+                    'name' => 'Hon. Zonal Director (Central Command)',
+                    'email' => 'central@sia2027.ng',
+                    'phone' => '0803 200 2027',
+                    'password' => 'Central2027!'
+                ],
+                [
+                    'district' => 'south',
+                    'name' => 'Hon. Zonal Director (South Command)',
+                    'email' => 'south@sia2027.ng',
+                    'phone' => '0803 300 2027',
+                    'password' => 'South2027!'
+                ]
+            ];
+
+            $stmt = $pdo->prepare("
+                INSERT INTO district_managers (district, name, email, phone, password_hash, status, created_at)
+                VALUES (?, ?, ?, ?, ?, 'active', datetime('now'))
+            ");
+
+            foreach ($default_managers as $m) {
+                $hash = password_hash($m['password'], PASSWORD_DEFAULT);
+                $stmt->execute([$m['district'], $m['name'], $m['email'], $m['phone'], $hash]);
+            }
+        }
+    } catch (Throwable $e) {
+        error_log("Failed to seed district managers: " . $e->getMessage());
+    }
 }
 
 /**
