@@ -299,16 +299,16 @@
       <!-- Quick Party Agent Action Tiles -->
       <div class="p-4 bg-gray-50 border-b border-gray-100 space-y-2">
         <span class="block text-[11px] font-bold uppercase tracking-wider text-gray-400">
-          Party Agent Quick Actions
+          Zonal Management & Field Actions
         </span>
         <div class="grid grid-cols-2 gap-2">
+          <a href="senatorial.php" class="flex items-center gap-2 p-3 rounded-xl bg-white border border-emerald-300 hover:border-emerald-500 text-emerald-900 font-bold text-xs shadow-sm transition-all" style="text-decoration:none;">
+            <span class="material-symbols-outlined text-base text-emerald-700">hub</span>
+            <span>Senatorial Zones</span>
+          </a>
           <a href="dashboard.php#ec8a-section" onclick="toggleSidebarMenu()" class="flex items-center gap-2 p-3 rounded-xl bg-white border border-emerald-200 hover:border-emerald-500 text-emerald-800 font-semibold text-xs shadow-sm transition-all" style="text-decoration:none;">
             <span class="material-symbols-outlined text-base text-emerald-700">upload</span>
-            <span>Upload result</span>
-          </a>
-          <a href="dashboard.php#incident-section" onclick="toggleSidebarMenu()" class="flex items-center gap-2 p-3 rounded-xl bg-white border border-red-200 hover:border-red-500 text-red-700 font-semibold text-xs shadow-sm transition-all" style="text-decoration:none;">
-            <span class="material-symbols-outlined text-base text-red-600">emergency</span>
-            <span>Report incident</span>
+            <span>Upload EC8A</span>
           </a>
         </div>
       </div>
@@ -318,6 +318,12 @@
         <span class="block px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">
           Electoral Navigation
         </span>
+
+        <a href="senatorial.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100 transition-colors border border-emerald-200/60" style="text-decoration:none;">
+          <span class="material-symbols-outlined text-base text-emerald-700">hub</span>
+          <span class="font-bold">Senatorial Districts Command</span>
+          <span class="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">3 Zones</span>
+        </a>
 
         <a href="#poll-chart-section" onclick="toggleSidebarMenu()" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-gray-800 hover:text-emerald-700 hover:bg-gray-50 transition-colors" style="text-decoration:none;">
           <span class="material-symbols-outlined text-base text-emerald-700">bar_chart</span>
@@ -421,6 +427,13 @@
             </span>
             <span>LIVE</span>
           </div>
+
+          <!-- Senatorial Districts Button (Direct Public & Management Access) -->
+          <a href="senatorial.php" class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/90 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full transition-all cursor-pointer shadow-sm text-decoration-none">
+            <span class="material-symbols-outlined text-sm text-emerald-700">hub</span>
+            <span class="hidden md:inline">Senatorial Districts</span>
+            <span class="md:hidden">Districts</span>
+          </a>
 
           <!-- Secondary Button: Result Sheets (Desktop/Tablet only) -->
           <button onclick="openResultSheetsModal()" class="hidden md:inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 hover:text-gray-950 border border-gray-200/90 px-3.5 py-2 rounded-full transition-all cursor-pointer shadow-sm">

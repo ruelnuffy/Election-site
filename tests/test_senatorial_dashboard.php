@@ -132,6 +132,30 @@ assert_test($resp3 && $resp3['success'] === true, "senatorial_ward_breakdown ret
 assert_test(count($resp3['wards'] ?? []) === 16, "Michika has exactly 16 official wards");
 assert_test(($resp3['wards'][0]['name'] ?? '') === 'Bazza Margi', "Ward 1 is Bazza Margi");
 
+// TEST 7: Open Management Dashboard (senatorial.php Zero Auth Access)
+echo "\n7. Testing Zero-Login Management Access on senatorial.php...\n";
+ob_start();
+include __DIR__ . '/../senatorial.php';
+$senatorial_html = ob_get_clean();
+assert_test(strlen($senatorial_html) > 500, "senatorial.php renders full executive management view");
+assert_test(strpos($senatorial_html, 'Management Command') !== false, "Contains Management Command header");
+assert_test(strpos($senatorial_html, 'Adamawa North') !== false, "Contains Adamawa North district selector");
+assert_test(strpos($senatorial_html, 'Comparative LGA Collation League Table') !== false, "Contains Comparative LGA Collation League Table");
+
+// TEST 8: Public API Endpoints via api.php (Zero Auth)
+echo "\n8. Testing Public api.php Senatorial Endpoints (Zero Auth)...\n";
+$cmd1 = 'php -r \'$_GET["action"] = "senatorial_overview"; $_GET["district"] = "south"; require "' . addslashes(__DIR__ . '/../api.php') . '";\'';
+$pub_out1 = shell_exec($cmd1);
+$pub_resp1 = json_decode($pub_out1, true);
+assert_test($pub_resp1 && $pub_resp1['success'] === true, "Public api.php senatorial_overview returns success without auth");
+assert_test(($pub_resp1['district']['id'] ?? '') === 'south', "Public district returned is 'south'");
+assert_test(($pub_resp1['kpis']['total_lgas'] ?? 0) === 9, "South total_lgas = 9");
+
+$cmd2 = 'php -r \'$_GET["action"] = "senatorial_agents"; $_GET["district"] = "north"; require "' . addslashes(__DIR__ . '/../api.php') . '";\'';
+$pub_out2 = shell_exec($cmd2);
+$pub_resp2 = json_decode($pub_out2, true);
+assert_test($pub_resp2 && $pub_resp2['success'] === true, "Public api.php senatorial_agents returns success without auth");
+
 echo "\n============================================\n";
 echo "TESTS RUN: {$tests_total}, PASSED: {$tests_passed}, FAILED: " . ($tests_total - $tests_passed) . "\n";
 if ($tests_passed === $tests_total) {

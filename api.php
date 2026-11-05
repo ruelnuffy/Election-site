@@ -255,6 +255,45 @@ if ($action === 'get_incidents') {
     exit;
 }
 
+// =============================================================
+// 3B. SENATORIAL DISTRICT MANAGEMENT ENDPOINTS (Zero Auth)
+// =============================================================
+if ($action === 'senatorial_overview') {
+    require_once __DIR__ . '/lib/senatorial_service.php';
+    $district_key = strtolower(trim($_GET['district'] ?? $_POST['district'] ?? 'north'));
+    echo json_encode(get_senatorial_overview_data($pdo, $district_key));
+    exit;
+}
+
+if ($action === 'senatorial_lga_breakdown') {
+    require_once __DIR__ . '/lib/senatorial_service.php';
+    $district_key = strtolower(trim($_GET['district'] ?? $_POST['district'] ?? 'north'));
+    echo json_encode(get_senatorial_lga_breakdown_data($pdo, $district_key));
+    exit;
+}
+
+if ($action === 'senatorial_ward_breakdown') {
+    require_once __DIR__ . '/lib/senatorial_service.php';
+    $lga_id = (int)($_GET['lga_id'] ?? $_POST['lga_id'] ?? 0);
+    $lga_name = trim($_GET['lga_name'] ?? $_POST['lga_name'] ?? '');
+    echo json_encode(get_senatorial_ward_breakdown_data($pdo, $lga_id, $lga_name));
+    exit;
+}
+
+if ($action === 'senatorial_incidents') {
+    require_once __DIR__ . '/lib/senatorial_service.php';
+    $district_key = strtolower(trim($_GET['district'] ?? $_POST['district'] ?? 'north'));
+    echo json_encode(get_senatorial_incidents_data($pdo, $district_key));
+    exit;
+}
+
+if ($action === 'senatorial_agents') {
+    require_once __DIR__ . '/lib/senatorial_service.php';
+    $district_key = strtolower(trim($_GET['district'] ?? $_POST['district'] ?? 'north'));
+    echo json_encode(get_senatorial_agents_data($pdo, $district_key, true));
+    exit;
+}
+
 // 4. CHECK AUTH STATUS
 if ($action === 'check_auth' || $action === 'check') {
     if (is_authenticated()) {
