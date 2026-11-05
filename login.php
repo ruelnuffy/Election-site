@@ -170,12 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   </script>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800 flex items-center justify-center p-4 selection:bg-emerald-600 selection:text-white relative overflow-x-hidden">
-
-  <!-- Subtle background glow -->
-  <div class="fixed inset-0 pointer-events-none flex items-center justify-center overflow-hidden -z-10">
-    <div class="w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl transform -translate-y-12"></div>
-  </div>
+<body class="min-h-screen bg-white text-slate-800 flex items-center justify-center p-4 selection:bg-emerald-600 selection:text-white">
 
   <div class="w-full max-w-md space-y-6 py-6">
 
@@ -187,9 +182,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
       </a>
       <h1 class="text-2xl font-bold tracking-tight text-slate-900 m-0">Sign in</h1>
-      <p class="text-xs sm:text-sm text-slate-500 font-normal">
-        Party Agent Portal &bull; Adamawa State
-      </p>
     </div>
 
     <!-- Sign In Card -->

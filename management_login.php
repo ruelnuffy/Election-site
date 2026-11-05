@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $csrf_token = csrf_token();
 ?>
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -136,10 +136,21 @@ $csrf_token = csrf_token();
   <!-- Typography: Plus Jakarta Sans & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
-
-  <!-- Google Material Symbols Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -148,84 +159,50 @@ $csrf_token = csrf_token();
       theme: {
         extend: {
           fontFamily: {
-            sans: ['"Plus Jakarta Sans"', '"Outfit"', 'system-ui', '-apple-system', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', '"Outfit"', 'system-ui', 'sans-serif'],
           }
         }
       }
     }
   </script>
-  <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .material-symbols-outlined { vertical-align: middle; }
-  </style>
 </head>
-<body class="min-h-full flex flex-col justify-between bg-slate-950 text-slate-100 antialiased selection:bg-emerald-600 selection:text-white">
+<body class="min-h-screen bg-white text-slate-800 flex items-center justify-center p-4 selection:bg-emerald-600 selection:text-white">
 
-  <!-- Top Simple Bar -->
-  <header class="p-4 sm:p-6 flex items-center justify-between max-w-6xl w-full mx-auto">
-    <a href="index.php" class="flex items-center gap-2.5 text-decoration-none group">
-      <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white font-black text-sm flex items-center justify-center tracking-tight shadow-md">
-        SIA
-      </div>
-      <div>
-        <span class="font-bold text-white text-base">SIA 2027</span>
-        <span class="block text-[11px] text-slate-400">Senatorial Management Gateway</span>
-      </div>
-    </a>
-    <a href="index.php" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors">
-      <span class="material-symbols-outlined text-sm">home</span>
-      <span>Public Situation Room</span>
-    </a>
-  </header>
+  <div class="w-full max-w-md space-y-6 py-6">
 
-  <!-- Login Card Container -->
-  <div class="w-full max-w-xl mx-auto px-4 py-8">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-      
-      <!-- Top Header -->
-      <div class="text-center space-y-1.5">
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-1">
-          <span class="material-symbols-outlined text-sm">shield</span>
-          <span>District Leadership Access</span>
+    <!-- Header Brand -->
+    <div class="text-center space-y-2">
+      <a href="index.php" class="inline-flex items-center justify-center gap-2 group text-decoration-none">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-600 group-hover:bg-emerald-700 text-white font-bold text-lg flex items-center justify-center shadow-lg shadow-emerald-600/20 transition-transform group-hover:scale-105">
+          SIA
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
-          District Management Sign In
-        </h1>
-        <p class="text-xs sm:text-sm text-slate-400">
-          Sign in to access your Senatorial District analytics, collation reports, and field operations.
-        </p>
-      </div>
+      </a>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 m-0">Senatorial District Management Sign In</h1>
+      <p class="text-xs text-slate-500 font-normal">
+        <?= htmlspecialchars($active_district['name']) ?> &bull; Zonal HQ: <?= htmlspecialchars($active_district['hq']) ?>
+      </p>
+    </div>
+
+    <!-- Sign In Card -->
+    <div class="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 space-y-5">
 
       <!-- District Switcher Tabs -->
-      <div class="bg-slate-950 p-1.5 rounded-2xl border border-slate-800 grid grid-cols-3 gap-1">
+      <div class="bg-slate-100 p-1 rounded-2xl grid grid-cols-3 gap-1">
         <?php foreach ($districts as $key => $d): 
           $is_sel = ($key === $selected_district);
         ?>
           <a href="management_login.php?district=<?= $key ?>" 
-             class="p-2.5 rounded-xl text-center transition-all text-decoration-none <?= $is_sel ? 'bg-slate-800 text-white font-bold shadow-md ring-1 ring-slate-700' : 'text-slate-400 hover:text-slate-200 text-xs' ?>">
-            <div class="text-[10px] font-mono uppercase tracking-wider <?= $is_sel ? 'text-emerald-400' : 'text-slate-500' ?>"><?= $d['code'] ?></div>
-            <div class="text-xs font-bold truncate mt-0.5"><?= $d['short_name'] ?></div>
+             class="py-2 px-1 sm:px-2 rounded-xl text-center text-xs transition-all text-decoration-none <?= $is_sel ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-900 font-medium' ?>">
+            <?= htmlspecialchars($d['name']) ?>
           </a>
         <?php endforeach; ?>
       </div>
 
-      <!-- Active District Summary Badge -->
-      <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between text-xs">
-        <div>
-          <span class="text-slate-400 block text-[11px]">Selected Zonal Command:</span>
-          <strong class="text-white text-sm font-bold"><?= htmlspecialchars($active_district['name']) ?></strong>
-          <span class="block text-slate-500 text-[11px] mt-0.5">Zonal HQ: <strong class="text-slate-300"><?= $active_district['hq'] ?></strong> &bull; <?= count($active_district['lgas']) ?> LGAs</span>
-        </div>
-        <span class="px-2.5 py-1 rounded-lg text-xs font-bold uppercase font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-          <?= $active_district['code'] ?>
-        </span>
-      </div>
-
       <!-- Error Message Banner -->
       <?php if (!empty($error)): ?>
-        <div class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-          <span class="material-symbols-outlined text-base">error</span>
-          <span><?= htmlspecialchars($error) ?></span>
+        <div class="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm flex items-start gap-2.5">
+          <span class="material-symbols-outlined text-red-500 text-base flex-shrink-0 mt-0.5">warning</span>
+          <span class="flex-1"><?= htmlspecialchars($error) ?></span>
         </div>
       <?php endif; ?>
 
@@ -234,84 +211,93 @@ $csrf_token = csrf_token();
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         <input type="hidden" name="district" value="<?= htmlspecialchars($selected_district) ?>">
 
+        <!-- Email Field -->
         <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Manager Email or Username</label>
-          <div class="relative">
-            <span class="material-symbols-outlined absolute left-3.5 top-3 text-slate-500 text-lg">mail</span>
-            <input type="email" 
-                   name="email" 
-                   id="managerEmail"
-                   required 
-                   value="<?= htmlspecialchars($_POST['email'] ?? ($selected_district . '@sia2027.ng')) ?>"
-                   class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-3 text-xs sm:text-sm text-white focus:border-emerald-500 focus:outline-none placeholder-slate-600">
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5">Email</label>
+          <div class="relative flex items-center">
+            <span class="material-symbols-outlined absolute left-3.5 text-slate-400 pointer-events-none text-lg">mail</span>
+            <input 
+              type="email" 
+              name="email" 
+              id="managerEmail"
+              required 
+              autocomplete="email"
+              placeholder="<?= $selected_district ?>@sia2027.ng" 
+              value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" 
+              class="w-full bg-white border border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 font-medium"
+            >
           </div>
         </div>
 
+        <!-- Password Field -->
         <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs font-bold text-slate-300 uppercase">Access Password</label>
-            <span class="text-[11px] text-slate-500 font-mono">Stored securely in DB</span>
-          </div>
-          <div class="relative">
-            <span class="material-symbols-outlined absolute left-3.5 top-3 text-slate-500 text-lg">lock</span>
-            <input type="password" 
-                   name="password" 
-                   id="managerPassword"
-                   required 
-                   placeholder="Enter your management password"
-                   value="<?= htmlspecialchars($_POST['password'] ?? (ucfirst($selected_district) . '2027!')) ?>"
-                   class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-10 text-xs sm:text-sm text-white focus:border-emerald-500 focus:outline-none placeholder-slate-600">
-            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-2.5 text-slate-500 hover:text-slate-300">
-              <span class="material-symbols-outlined text-lg" id="eyeIcon">visibility</span>
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5">Password</label>
+          <div class="relative flex items-center">
+            <span class="material-symbols-outlined absolute left-3.5 text-slate-400 pointer-events-none text-lg">lock</span>
+            <input 
+              type="password" 
+              id="managerPassword"
+              name="password" 
+              required 
+              autocomplete="current-password"
+              placeholder="••••••••••••" 
+              class="w-full bg-white border border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 rounded-xl pl-11 pr-11 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400"
+            >
+            <button 
+              type="button" 
+              onclick="togglePasswordVisibility()" 
+              class="absolute right-3 text-slate-400 hover:text-slate-600 bg-transparent border-0 p-1 cursor-pointer transition-colors"
+              aria-label="Toggle password visibility"
+            >
+              <span id="pwdToggleIcon" class="material-symbols-outlined text-lg">visibility</span>
             </button>
           </div>
         </div>
 
-        <!-- Quick Credential Auto-Fill Indicator -->
-        <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 space-y-1">
-          <div class="flex items-center justify-between">
-            <span>Seeded DB Account:</span>
-            <strong class="text-emerald-400 font-mono"><?= $selected_district ?>@sia2027.ng</strong>
-          </div>
-          <div class="flex items-center justify-between">
-            <span>Default Password:</span>
-            <strong class="text-slate-300 font-mono"><?= ucfirst($selected_district) ?>2027!</strong>
-          </div>
+        <!-- Submit Button -->
+        <div class="pt-2">
+          <button 
+            type="submit" 
+            class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold py-3 rounded-full text-sm shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <span>Sign In</span>
+            <span class="material-symbols-outlined text-base">arrow_forward</span>
+          </button>
         </div>
-
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-lg shadow-emerald-950 transition-all flex items-center justify-center gap-2">
-          <span>Sign In to <?= htmlspecialchars($active_district['short_name']) ?> Dashboard</span>
-          <span class="material-symbols-outlined text-base">login</span>
-        </button>
       </form>
 
       <!-- Bottom Links -->
-      <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-        <a href="login.php" class="hover:text-white transition-colors">Field Agent Portal &rarr;</a>
-        <a href="admin_login.php" class="hover:text-white transition-colors">IT Admin Sign In</a>
+      <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <a href="login.php" class="text-slate-500 hover:text-slate-800 transition-colors">Field Agent Portal</a>
+        <a href="index.php" class="text-slate-500 hover:text-slate-800 transition-colors">Public Situation Room &rarr;</a>
       </div>
 
     </div>
-  </div>
 
-  <!-- Bottom Footer -->
-  <footer class="p-4 text-center text-xs text-slate-500">
-    SIA 2027 &bull; Senator Ishaku Abbo Campaign Organization &bull; Adamawa State
-  </footer>
+    <!-- Quick Footer Links -->
+    <div class="text-center text-xs text-slate-500">
+      <a href="index.php" class="text-slate-500 hover:text-slate-800 transition-colors inline-flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">arrow_back</span>
+        <span>Back to Website</span>
+      </a>
+    </div>
+
+  </div>
 
   <script>
     function togglePasswordVisibility() {
-      const pwd = document.getElementById('managerPassword');
-      const eye = document.getElementById('eyeIcon');
-      if (pwd.type === 'password') {
-        pwd.type = 'text';
-        eye.textContent = 'visibility_off';
+      const input = document.getElementById('managerPassword');
+      const icon = document.getElementById('pwdToggleIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility_off';
       } else {
-        pwd.type = 'password';
-        eye.textContent = 'visibility';
+        input.type = 'password';
+        icon.textContent = 'visibility';
       }
     }
   </script>
 
 </body>
 </html>
+

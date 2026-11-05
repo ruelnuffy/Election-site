@@ -165,12 +165,7 @@ $csrf_token = csrf_token();
     }
   </script>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800 flex items-center justify-center p-4 selection:bg-emerald-600 selection:text-white relative">
-
-  <!-- Background decorative glow -->
-  <div class="fixed inset-0 pointer-events-none flex items-center justify-center overflow-hidden -z-10">
-    <div class="w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl transform -translate-y-12"></div>
-  </div>
+<body class="min-h-screen bg-white text-slate-800 flex items-center justify-center p-4 selection:bg-emerald-600 selection:text-white">
 
   <div class="w-full max-w-md space-y-6">
     <!-- Header Brand -->
@@ -180,10 +175,7 @@ $csrf_token = csrf_token();
           SIA
         </div>
       </a>
-      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 m-0">Admin Sign In</h1>
-      <p class="text-xs sm:text-sm text-slate-500 font-normal">
-        Electoral Command Center &bull; Adamawa State
-      </p>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 m-0">Admin Sign In</h1>
     </div>
 
     <!-- Login Box -->

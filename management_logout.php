@@ -13,3 +13,4 @@ if (isset($_SESSION['district_manager'])) {
 
 header('Location: management_login.php');
 exit;
+
