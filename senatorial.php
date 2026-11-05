@@ -88,8 +88,8 @@ $active_district_info = $districts[$selected_district];
         
         <!-- Left: Branding -->
         <a href="index.php" class="flex items-center gap-3 text-decoration-none group">
-          <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white font-extrabold text-base flex items-center justify-center tracking-tight shadow-sm group-hover:scale-105 transition-transform">
-            SIA
+          <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-xs p-1 flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
+            <img src="./assets/images/logos/lp_logo.png" alt="Labour Party" class="w-full h-full object-contain">
           </div>
           <div>
             <div class="flex items-center gap-2">

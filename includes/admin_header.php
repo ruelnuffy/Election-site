@@ -135,8 +135,8 @@ $csrf_token = csrf_token();
       <!-- Top Brand -->
       <div class="p-5 border-b border-slate-100 flex items-center justify-between">
         <a href="admin_overview.php" class="flex items-center gap-3 text-decoration-none group">
-          <div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white font-black text-base flex items-center justify-center tracking-tight shadow-md shadow-emerald-600/20 group-hover:scale-105 transition-transform">
-            SIA
+          <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-xs p-1 flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
+            <img src="./assets/images/logos/lp_logo.png" alt="Labour Party" class="w-full h-full object-contain">
           </div>
           <div>
             <div class="flex items-center gap-1.5">

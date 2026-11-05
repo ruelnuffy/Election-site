@@ -143,9 +143,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Header Brand -->
     <div class="text-center space-y-2">
-      <a href="index.php" class="inline-flex items-center justify-center gap-2 group text-decoration-none">
-        <div class="w-12 h-12 rounded-2xl bg-emerald-600 group-hover:bg-emerald-700 text-white font-bold text-lg flex items-center justify-center shadow-lg shadow-emerald-600/20 transition-transform group-hover:scale-105">
-          SIA
+      <a href="index.php" class="inline-flex items-center justify-center group text-decoration-none">
+        <div class="w-14 h-14 rounded-2xl bg-white border border-slate-200/90 shadow-md p-1 flex items-center justify-center transition-transform group-hover:scale-105 overflow-hidden">
+          <img src="./assets/images/logos/lp_logo.png" alt="Labour Party" class="w-full h-full object-contain">
         </div>
       </a>
       <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 m-0">Reset password</h1>
