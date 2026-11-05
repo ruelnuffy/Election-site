@@ -360,6 +360,32 @@ function init_database_schema(PDO $pdo): void {
         );
     ");
 
+    // ---------------------------------------------------------
+    // 11. Senatorial Districts Synchronization
+    // ---------------------------------------------------------
+    sync_senatorial_districts($pdo);
+
+}
+
+/**
+ * Syncs and updates the official senatorial district mapping for all 21 Adamawa LGAs
+ */
+function sync_senatorial_districts(PDO $pdo): void {
+    ensure_column_exists($pdo, 'lgas', 'senatorial_district', 'VARCHAR(50) DEFAULT NULL');
+    ensure_column_exists($pdo, 'admins', 'senatorial_district', 'VARCHAR(50) DEFAULT NULL');
+
+    $districts = [
+        'north' => ['Madagali', 'Maiha', 'Michika', 'Mubi North', 'Mubi South'],
+        'central' => ['Fufore', 'Girei', 'Gombi', 'Hong', 'Song', 'Yola North', 'Yola South'],
+        'south' => ['Demsa', 'Ganye', 'Guyuk', 'Jada', 'Lamurde', 'Mayo-Belwa', 'Numan', 'Shelleng', 'Toungo']
+    ];
+
+    $stmt_upd = $pdo->prepare("UPDATE lgas SET senatorial_district = ? WHERE LOWER(name) = LOWER(?)");
+    foreach ($districts as $district_key => $lgas) {
+        foreach ($lgas as $lga_name) {
+            $stmt_upd->execute([$district_key, $lga_name]);
+        }
+    }
 }
 
 /**
@@ -367,10 +393,20 @@ function init_database_schema(PDO $pdo): void {
  */
 function ensure_column_exists(PDO $pdo, string $table, string $column, string $definition): void {
     try {
-        $cols = $pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_ASSOC);
-        $existing = array_column($cols, 'name');
-        if (!in_array($column, $existing, true)) {
-            $pdo->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$definition}");
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $cols = $pdo->query("PRAGMA table_info({$table})")->fetchAll(PDO::FETCH_ASSOC);
+            $existing = array_column($cols, 'name');
+            if (!in_array($column, $existing, true)) {
+                $pdo->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$definition}");
+            }
+        } else {
+            // MySQL / MariaDB
+            $stmt = $pdo->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?");
+            $stmt->execute([$table, $column]);
+            if (!$stmt->fetch()) {
+                $pdo->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$definition}");
+            }
         }
     } catch (Throwable $e) {
         error_log("Failed to alter table {$table} add column {$column}: " . $e->getMessage());

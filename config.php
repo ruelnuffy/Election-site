@@ -187,6 +187,67 @@ function get_party_column_names(): array {
 }
 
 // Flash Message Helpers
+// Official Adamawa Senatorial Districts (3 Districts)
+const ADAMAWA_SENATORIAL_DISTRICTS = [
+    'north' => [
+        'id' => 'north',
+        'code' => 'AD-NORTH',
+        'name' => 'Adamawa North Senatorial District',
+        'short_name' => 'Adamawa North',
+        'hq' => 'Mubi',
+        'strategic_role' => 'Home Fortress (Senator Ishaku Abbo Stronghold)',
+        'target_share' => 70, // 70% win target
+        'lgas' => ['Madagali', 'Maiha', 'Michika', 'Mubi North', 'Mubi South'],
+        'accent_color' => '#059669', // Emerald
+        'bg_class' => 'bg-emerald-50 text-emerald-800 border-emerald-200'
+    ],
+    'central' => [
+        'id' => 'central',
+        'code' => 'AD-CENTRAL',
+        'name' => 'Adamawa Central Senatorial District',
+        'short_name' => 'Adamawa Central',
+        'hq' => 'Yola',
+        'strategic_role' => 'Metropolitan Capital & High-Density Battleground',
+        'target_share' => 52, // 52% target
+        'lgas' => ['Fufore', 'Girei', 'Gombi', 'Hong', 'Song', 'Yola North', 'Yola South'],
+        'accent_color' => '#2563eb', // Blue
+        'bg_class' => 'bg-blue-50 text-blue-800 border-blue-200'
+    ],
+    'south' => [
+        'id' => 'south',
+        'code' => 'AD-SOUTH',
+        'name' => 'Adamawa South Senatorial District',
+        'short_name' => 'Adamawa South',
+        'hq' => 'Numan',
+        'strategic_role' => 'Southern Agrarian Frontier & 25% Spread Balancer',
+        'target_share' => 48, // 48% target
+        'lgas' => ['Demsa', 'Ganye', 'Guyuk', 'Jada', 'Lamurde', 'Mayo-Belwa', 'Numan', 'Shelleng', 'Toungo'],
+        'accent_color' => '#d97706', // Amber
+        'bg_class' => 'bg-amber-50 text-amber-800 border-amber-200'
+    ]
+];
+
+function get_senatorial_districts(): array {
+    return ADAMAWA_SENATORIAL_DISTRICTS;
+}
+
+function get_senatorial_district(string $key): ?array {
+    $k = strtolower(trim($key));
+    return ADAMAWA_SENATORIAL_DISTRICTS[$k] ?? null;
+}
+
+function get_lga_senatorial_district(string $lga_name): ?string {
+    $clean = trim($lga_name);
+    foreach (ADAMAWA_SENATORIAL_DISTRICTS as $district_key => $district) {
+        foreach ($district['lgas'] as $l) {
+            if (strcasecmp($l, $clean) === 0) {
+                return $district_key;
+            }
+        }
+    }
+    return null;
+}
+
 function set_flash(string $type, string $message): void {
     $_SESSION['flash'] = ['type' => $type, 'message' => $message];
 }

@@ -184,6 +184,7 @@ $csrf_token = csrf_token();
         <?php
         $nav_items = [
             ['page' => 'overview', 'href' => 'admin_overview.php', 'icon' => 'bar_chart', 'label' => 'Overview'],
+            ['page' => 'senatorial', 'href' => 'admin_senatorial.php', 'icon' => 'hub', 'label' => 'Senatorial Districts'],
             ['page' => 'review-queue', 'href' => 'admin_review.php', 'icon' => 'receipt_long', 'label' => 'Review Queue', 'badge' => 'badgePendingQueue', 'badge_class' => 'bg-amber-100 text-amber-800 border border-amber-200'],
             ['page' => 'discrepancies', 'href' => 'admin_discrepancies.php', 'icon' => 'warning', 'label' => 'Discrepancies', 'badge' => 'badgeDiscrepancies', 'badge_class' => 'bg-rose-100 text-rose-700 border border-rose-200'],
             ['page' => 'agents', 'href' => 'admin_agents.php', 'icon' => 'badge', 'label' => 'Field Agents'],

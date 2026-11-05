@@ -104,6 +104,7 @@ function switchTab(tab) {
   // Update Top Title (crisp, uncluttered labels)
   const titles = {
     'overview': 'Overview',
+    'senatorial': 'Senatorial Districts Command',
     'review-queue': 'Results Review Queue',
     'discrepancies': 'Discrepancy Audit',
     'agents': 'Field Agents',
@@ -146,6 +147,9 @@ async function loadModuleContent(tab) {
     switch (tab) {
       case 'overview':
         await renderOverviewModule(container);
+        break;
+      case 'senatorial':
+        await renderSenatorialModule(container);
         break;
       case 'review-queue':
         await renderReviewQueueModule(container);
@@ -2924,6 +2928,493 @@ async function renderAuditLogModule(container) {
   `;
 }
 
+// =========================================================================
+// SENATORIAL DISTRICTS COMMAND MODULE
+// =========================================================================
+let currentSenatorialDistrict = 'north';
+
+async function renderSenatorialModule(container, district = currentSenatorialDistrict) {
+  currentSenatorialDistrict = district;
+
+  const [resOverview, resLgas, resIncidents, resAgents] = await Promise.all([
+    fetch(`admin_api.php?action=senatorial_overview&district=${district}`).then(r => r.json()),
+    fetch(`admin_api.php?action=senatorial_lga_breakdown&district=${district}`).then(r => r.json()),
+    fetch(`admin_api.php?action=senatorial_incidents&district=${district}`).then(r => r.json()),
+    fetch(`admin_api.php?action=senatorial_agents&district=${district}`).then(r => r.json())
+  ]);
+
+  if (!resOverview.success) throw new Error(resOverview.message || 'Failed to load district overview');
+
+  const d = resOverview.district;
+  const k = resOverview.kpis;
+  const lgas = resLgas.lgas || [];
+  const incidents = resIncidents.incidents || [];
+  const agents = resAgents.agents || [];
+  const trans = resOverview.transmission_health || { ground: 0, transit_10m: 0, transit_30m: 0 };
+  const totalTrans = Math.max(1, trans.ground + trans.transit_10m + trans.transit_30m);
+
+  const groundPct = Math.round((trans.ground / totalTrans) * 100);
+  const transit10Pct = Math.round((trans.transit_10m / totalTrans) * 100);
+  const transit30Pct = Math.round((trans.transit_30m / totalTrans) * 100);
+
+  container.innerHTML = `
+    <div class="space-y-6">
+
+      <!-- 1. District Switcher Header -->
+      <div class="top-glass-card p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-emerald-600 text-2xl">hub</span>
+            <h2 class="text-xl font-bold text-slate-900 tracking-tight">${escapeHtml(d.name)}</h2>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${escapeHtml(d.bg_class)} uppercase">
+              ${escapeHtml(d.code)}
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">
+            Zonal HQ: <strong class="text-slate-700">${escapeHtml(d.hq)}</strong> &bull; Role: <span class="text-slate-600">${escapeHtml(d.strategic_role)}</span>
+          </p>
+        </div>
+
+        <!-- 3 Senatorial Pills -->
+        <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+          <button onclick="renderSenatorialModule(document.getElementById('moduleView'), 'north')" 
+            class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${district === 'north' ? 'bg-white text-emerald-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}">
+            North (5 LGAs)
+          </button>
+          <button onclick="renderSenatorialModule(document.getElementById('moduleView'), 'central')" 
+            class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${district === 'central' ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}">
+            Central (7 LGAs)
+          </button>
+          <button onclick="renderSenatorialModule(document.getElementById('moduleView'), 'south')" 
+            class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${district === 'south' ? 'bg-white text-amber-700 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'}">
+            South (9 LGAs)
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Four Golden Executive KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        <!-- Turnout & PUs -->
+        <div class="top-glass-card p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Turnout & PUs</span>
+            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              ${k.reporting_percentage}% Reported
+            </span>
+          </div>
+          <div class="text-2xl font-extrabold text-slate-900">
+            ${k.reported_pus.toLocaleString()} <span class="text-sm font-normal text-slate-400">/ ${k.total_pus.toLocaleString()} PUs</span>
+          </div>
+          <div class="text-xs text-slate-500 mt-2">
+            <strong>${k.total_accredited.toLocaleString()}</strong> voters accredited (${k.total_registered.toLocaleString()} on PVC roll)
+          </div>
+          <div class="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden mt-3">
+            <div class="h-full bg-emerald-600 rounded-full" style="width: ${Math.min(100, Math.max(3, k.reporting_percentage))}%"></div>
+          </div>
+        </div>
+
+        <!-- Senator Ishaku Abbo (LP) Votes -->
+        <div class="top-glass-card p-5 flex flex-col justify-between border-emerald-200 bg-gradient-to-br from-white to-emerald-50/30">
+          <div class="flex items-center justify-between text-slate-500 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-emerald-800">LP &bull; Senator Ishaku Abbo</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-600 text-white">PRIORITY</span>
+          </div>
+          <div class="text-2xl font-black text-emerald-700">
+            ${k.lp_votes.toLocaleString()} <span class="text-sm font-bold text-emerald-600">(${k.lp_percentage}%)</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-2 flex items-center justify-between">
+            <span>Net Lead Margin:</span>
+            <strong class="${k.margin_lead >= 0 ? 'text-emerald-700' : 'text-rose-600'} font-bold">
+              ${k.margin_lead >= 0 ? '+' : ''}${k.margin_lead.toLocaleString()} votes
+            </strong>
+          </div>
+        </div>
+
+        <!-- 25% Constitutional Spread Compliance Meter -->
+        <div class="top-glass-card p-5 flex flex-col justify-between ${k.passed_25_all ? 'border-emerald-200' : 'border-amber-200'}">
+          <div class="flex items-center justify-between text-slate-500 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">25% Constitutional Spread</span>
+            <span class="material-symbols-outlined ${k.passed_25_all ? 'text-emerald-600' : 'text-amber-600'} text-lg">gavel</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-extrabold ${k.passed_25_all ? 'text-emerald-700' : 'text-amber-700'}">
+              ${k.passed_25_count} <span class="text-sm font-normal text-slate-400">/ ${k.passed_25_total} LGAs</span>
+            </span>
+          </div>
+          <div class="text-xs text-slate-500 mt-2 font-medium">
+            ${k.passed_25_all ? '✓ 100% of district LGAs secured >25%' : `Need ${k.passed_25_total - k.passed_25_count} more LGA(s) to pass 25% threshold`}
+          </div>
+          <div class="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden mt-3">
+            <div class="h-full ${k.passed_25_all ? 'bg-emerald-600' : 'bg-amber-500'} rounded-full" 
+              style="width: ${Math.round((k.passed_25_count / k.passed_25_total) * 100)}%"></div>
+          </div>
+        </div>
+
+        <!-- Ground Connectivity & Incidents -->
+        <div class="top-glass-card p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Ground Signals & Threats</span>
+            <span class="material-symbols-outlined text-slate-400 text-lg">cell_tower</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs text-slate-500 block">Threat Incidents</span>
+              <span class="text-lg font-black ${k.critical_incidents > 0 ? 'text-rose-600' : 'text-slate-800'}">
+                ${k.total_incidents} (${k.critical_incidents} critical)
+              </span>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-500 block">Agent Photos</span>
+              <span class="text-lg font-black text-emerald-700">${k.agents_with_photo} / ${k.total_agents}</span>
+            </div>
+          </div>
+          <div class="text-[11px] text-slate-500 mt-2">
+            Instant PU Ground Reports: <strong>${groundPct}%</strong>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3. LGA Collation League Table & Performance Matrix -->
+      <div class="top-glass-card overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 tracking-tight">LGA Collation Matrix &bull; ${escapeHtml(d.short_name)}</h3>
+            <p class="text-xs text-slate-500">Live tally verification, margin comparison, and 25% statutory compliance across all ${lgas.length} LGAs</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="exportZonalCsv('${district}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all cursor-pointer">
+              <span class="material-symbols-outlined text-sm">download</span>
+              <span>Export Zonal Pack</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="py-3 px-4">Local Government Area</th>
+                <th class="py-3 px-3">Reporting PUs</th>
+                <th class="py-3 px-3">Total Valid</th>
+                <th class="py-3 px-3 text-emerald-800 font-extrabold bg-emerald-50/50">LP (SIA)</th>
+                <th class="py-3 px-3">APC</th>
+                <th class="py-3 px-3">PDP</th>
+                <th class="py-3 px-3">Lead Margin</th>
+                <th class="py-3 px-3 text-center">25% Spread</th>
+                <th class="py-3 px-3 text-center">Over-Voting</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${lgas.map(l => {
+                const passed25Badge = l.passed_25_pct 
+                  ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">PASS (${l.lp_percentage}%)</span>`
+                  : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">${l.lp_percentage}%</span>`;
+
+                const overvoteBadge = l.overvoting_count > 0
+                  ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">${l.overvoting_count} FLAGGED</span>`
+                  : `<span class="text-slate-400 font-medium">0</span>`;
+
+                return `
+                  <tr class="hover:bg-slate-50/80 transition-colors">
+                    <td class="py-3.5 px-4">
+                      <div class="font-bold text-slate-900">${escapeHtml(l.name)}</div>
+                      <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(l.code)} &bull; Coord: ${escapeHtml(l.coordinator_name)}</div>
+                    </td>
+                    <td class="py-3.5 px-3">
+                      <div class="font-bold text-slate-800">${l.reported_pus} / ${l.total_pus}</div>
+                      <div class="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden mt-1">
+                        <div class="h-full bg-emerald-600 rounded-full" style="width: ${Math.min(100, Math.max(3, l.reporting_percentage))}%"></div>
+                      </div>
+                    </td>
+                    <td class="py-3.5 px-3 font-semibold text-slate-800 font-mono">
+                      ${l.total_valid.toLocaleString()}
+                    </td>
+                    <td class="py-3.5 px-3 font-mono font-bold text-emerald-700 bg-emerald-50/30">
+                      ${l.lp_votes.toLocaleString()} <span class="text-[10px] font-normal text-emerald-600">(${l.lp_percentage}%)</span>
+                    </td>
+                    <td class="py-3.5 px-3 font-mono text-slate-600">
+                      ${l.apc_votes.toLocaleString()}
+                    </td>
+                    <td class="py-3.5 px-3 font-mono text-slate-600">
+                      ${l.pdp_votes.toLocaleString()}
+                    </td>
+                    <td class="py-3.5 px-3 font-mono font-bold ${l.margin_lead >= 0 ? 'text-emerald-700' : 'text-rose-600'}">
+                      ${l.margin_lead >= 0 ? '+' : ''}${l.margin_lead.toLocaleString()}
+                    </td>
+                    <td class="py-3.5 px-3 text-center">
+                      ${passed25Badge}
+                    </td>
+                    <td class="py-3.5 px-3 text-center">
+                      ${overvoteBadge}
+                    </td>
+                    <td class="py-3.5 px-4 text-right">
+                      <button onclick="openWardDrillDownModal(${l.id}, '${escapeHtml(l.name)}')" 
+                        class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all cursor-pointer">
+                        Wards Drill-Down
+                      </button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 4. Two Columns: Transmission Telemetry & Zonal Incidents -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Ground Transmission Telemetry -->
+        <div class="top-glass-card p-5">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 tracking-tight">Ground Transmission Telemetry</h3>
+              <p class="text-xs text-slate-500">Physical signal accessibility reported by PU agents in ${escapeHtml(d.short_name)}</p>
+            </div>
+            <span class="material-symbols-outlined text-slate-400">satellite_alt</span>
+          </div>
+
+          <div class="space-y-4">
+            <!-- 1. PU Ground -->
+            <div class="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-100">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Reporting directly on PU ground
+                </span>
+                <span class="text-xs font-black text-emerald-800">${trans.ground} sheets (${groundPct}%)</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full bg-emerald-200/50 overflow-hidden">
+                <div class="h-full bg-emerald-600 rounded-full" style="width: ${groundPct}%"></div>
+              </div>
+            </div>
+
+            <!-- 2. 10 mins transit -->
+            <div class="p-3.5 rounded-xl bg-blue-50/50 border border-blue-100">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Took 10 mins to reach network
+                </span>
+                <span class="text-xs font-black text-blue-800">${trans.transit_10m} sheets (${transit10Pct}%)</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full bg-blue-200/50 overflow-hidden">
+                <div class="h-full bg-blue-600 rounded-full" style="width: ${transit10Pct}%"></div>
+              </div>
+            </div>
+
+            <!-- 3. 30 mins remote transit -->
+            <div class="p-3.5 rounded-xl bg-amber-50/50 border border-amber-100">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  Traveled 30+ mins to reach internet (Remote Blindspots)
+                </span>
+                <span class="text-xs font-black text-amber-800">${trans.transit_30m} sheets (${transit30Pct}%)</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full bg-amber-200/50 overflow-hidden">
+                <div class="h-full bg-amber-500 rounded-full" style="width: ${transit30Pct}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zonal Incident Threat Radar -->
+        <div class="top-glass-card p-5">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 tracking-tight">Zonal Incident Threat Radar</h3>
+              <p class="text-xs text-slate-500">Active alerts scoped to ${escapeHtml(d.short_name)}</p>
+            </div>
+            <span class="material-symbols-outlined text-rose-500">emergency</span>
+          </div>
+
+          ${incidents.length === 0 ? `
+            <div class="py-12 text-center text-slate-400">
+              <span class="material-symbols-outlined text-3xl mb-1 text-slate-300">verified_user</span>
+              <p class="text-xs">No active incidents reported in ${escapeHtml(d.short_name)}</p>
+            </div>
+          ` : `
+            <div class="space-y-3 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+              ${incidents.map(inc => `
+                <div class="p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                      inc.severity === 'Critical' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
+                      inc.severity === 'High' ? 'bg-orange-100 text-orange-800 border border-orange-200' :
+                      'bg-slate-100 text-slate-700'
+                    }">${escapeHtml(inc.severity)} &bull; ${escapeHtml(inc.category)}</span>
+                    <span class="text-[10px] text-slate-400">${escapeHtml(inc.created_at)}</span>
+                  </div>
+                  <h4 class="text-xs font-bold text-slate-900">${escapeHtml(inc.title)}</h4>
+                  <p class="text-[11px] text-slate-600 line-clamp-2 mt-0.5">${escapeHtml(inc.description)}</p>
+                  <div class="text-[10px] text-slate-400 mt-1 font-mono">
+                    LGA: ${escapeHtml(inc.lga)} &bull; Ward: ${escapeHtml(inc.ward || 'N/A')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+
+      </div>
+
+      <!-- 5. Agent Facial Verification Gallery (Campaign Chairman Feature) -->
+      <div class="top-glass-card p-5">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 tracking-tight">Accredited Agent Identity Stream</h3>
+            <p class="text-xs text-slate-500">Live facial snapshots captured by PU agents across ${escapeHtml(d.short_name)}</p>
+          </div>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            ${agents.length} Field Agents
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          ${agents.slice(0, 12).map(ag => {
+            const hasPhoto = ag.photo && ag.photo.trim() !== '';
+            const photoSrc = hasPhoto 
+              ? (ag.photo.startsWith('http') ? ag.photo : ag.photo)
+              : '';
+
+            return `
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-center flex flex-col items-center">
+                <div class="w-14 h-14 rounded-full border-2 border-emerald-500 overflow-hidden bg-white mb-2 shadow-xs flex items-center justify-center">
+                  ${hasPhoto 
+                    ? `<img src="${escapeHtml(photoSrc)}" alt="${escapeHtml(ag.name)}" class="w-full h-full object-cover">`
+                    : `<span class="material-symbols-outlined text-slate-300 text-2xl">person</span>`
+                  }
+                </div>
+                <div class="text-xs font-bold text-slate-900 truncate w-full" title="${escapeHtml(ag.name)}">
+                  ${escapeHtml(ag.name)}
+                </div>
+                <div class="text-[9px] text-emerald-700 font-mono font-semibold">
+                  ${escapeHtml(ag.agent_code)}
+                </div>
+                <div class="text-[9px] text-slate-400 truncate w-full mt-0.5">
+                  ${escapeHtml(ag.lga)}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Ward Drill-Down Modal Container -->
+    <div id="senatorialWardModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+      <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div>
+            <h3 id="wardModalTitle" class="text-base font-bold text-slate-900">Ward Breakdown</h3>
+            <p id="wardModalSubtitle" class="text-xs text-slate-500">Ward collation inspection</p>
+          </div>
+          <button onclick="closeWardDrillDownModal()" class="w-8 h-8 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-600 flex items-center justify-center cursor-pointer">
+            <span class="material-symbols-outlined text-sm">close</span>
+          </button>
+        </div>
+        <div id="wardModalBody" class="p-5 overflow-y-auto custom-scrollbar flex-1">
+          <!-- Wards Table dynamically injected -->
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function openWardDrillDownModal(lgaId, lgaName) {
+  const modal = document.getElementById('senatorialWardModal');
+  const title = document.getElementById('wardModalTitle');
+  const sub = document.getElementById('wardModalSubtitle');
+  const body = document.getElementById('wardModalBody');
+
+  if (!modal || !body) return;
+
+  title.textContent = `${lgaName} • Ward Collation Breakdown`;
+  sub.textContent = `Inspecting all electoral wards and voting progress in ${lgaName}`;
+  body.innerHTML = `
+    <div class="text-center py-12 text-slate-400">
+      <div class="w-8 h-8 mx-auto border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+      <span class="text-xs">Loading ward data for ${lgaName}...</span>
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  try {
+    const res = await fetch(`admin_api.php?action=senatorial_ward_breakdown&lga_id=${lgaId}`).then(r => r.json());
+    if (!res.success) throw new Error(res.message);
+
+    const wards = res.wards || [];
+    body.innerHTML = `
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <th class="py-2.5 px-3">Electoral Ward</th>
+            <th class="py-2.5 px-3">PUs Reported</th>
+            <th class="py-2.5 px-3">Registered</th>
+            <th class="py-2.5 px-3">Total Valid</th>
+            <th class="py-2.5 px-3 text-emerald-800 font-bold bg-emerald-50">LP (SIA)</th>
+            <th class="py-2.5 px-3">APC</th>
+            <th class="py-2.5 px-3">PDP</th>
+            <th class="py-2.5 px-3 text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          ${wards.map(w => `
+            <tr class="hover:bg-slate-50">
+              <td class="py-3 px-3">
+                <span class="font-bold text-slate-900">${escapeHtml(w.name)}</span>
+                <span class="block text-[10px] text-slate-400 font-mono">${escapeHtml(w.code)}</span>
+              </td>
+              <td class="py-3 px-3 font-semibold text-slate-800">
+                ${w.reported_pus} / ${w.total_pus} (${w.reporting_percentage}%)
+              </td>
+              <td class="py-3 px-3 text-slate-600 font-mono">
+                ${w.total_registered.toLocaleString()}
+              </td>
+              <td class="py-3 px-3 text-slate-800 font-mono font-semibold">
+                ${w.total_valid.toLocaleString()}
+              </td>
+              <td class="py-3 px-3 text-emerald-700 font-mono font-bold bg-emerald-50/50">
+                ${w.lp_votes.toLocaleString()} (${w.lp_percentage}%)
+              </td>
+              <td class="py-3 px-3 text-slate-600 font-mono">
+                ${w.apc_votes.toLocaleString()}
+              </td>
+              <td class="py-3 px-3 text-slate-600 font-mono">
+                ${w.pdp_votes.toLocaleString()}
+              </td>
+              <td class="py-3 px-3 text-center">
+                ${w.is_leading ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">LP LEADING</span>' : '<span class="text-slate-400 text-[10px]">TALLYING</span>'}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    body.innerHTML = `<div class="p-6 text-center text-rose-600 text-xs font-semibold">Error: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function closeWardDrillDownModal() {
+  const modal = document.getElementById('senatorialWardModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function exportZonalCsv(district) {
+  window.open(`admin_api.php?action=export_csv&district=${district}`, '_blank');
+}
+
 // Password modal handler
 function openPasswordModal() {
   document.getElementById('adminPasswordModal').classList.remove('hidden');
@@ -2956,7 +3447,7 @@ async function handleAdminChangePassword(e) {
 window.addEventListener('DOMContentLoaded', () => {
   const bodyPage = document.body.dataset.page;
   const hash = window.location.hash.replace('#', '');
-  const validTabs = ['overview', 'review-queue', 'discrepancies', 'agents', 'coverage', 'incidents', 'announcements', 'reports', 'geography', 'settings', 'admin-users', 'backup', 'audit-log'];
+  const validTabs = ['overview', 'senatorial', 'review-queue', 'discrepancies', 'agents', 'coverage', 'incidents', 'announcements', 'reports', 'geography', 'settings', 'admin-users', 'backup', 'audit-log'];
   const targetPage = (bodyPage && validTabs.includes(bodyPage)) ? bodyPage : (validTabs.includes(hash) ? hash : 'overview');
   switchTab(targetPage);
 });
