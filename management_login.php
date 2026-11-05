@@ -193,7 +193,7 @@ $csrf_token = csrf_token();
         ?>
           <a href="management_login.php?district=<?= $key ?>" 
              class="py-2 px-1 sm:px-2 rounded-xl text-center text-xs transition-all text-decoration-none <?= $is_sel ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-900 font-medium' ?>">
-            <?= htmlspecialchars($d['name']) ?>
+            <?= htmlspecialchars($d['short_name']) ?>
           </a>
         <?php endforeach; ?>
       </div>
